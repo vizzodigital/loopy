@@ -5,20 +5,19 @@ declare(strict_types = 1);
 namespace App\Filament\Pages\Tenancy;
 
 use App\Models\Platform;
-use App\Models\Store;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
-use Filament\Pages\Tenancy\RegisterTenant;
+use Filament\Pages\Tenancy\EditTenantProfile;
 use Illuminate\Support\Str;
 
-class RegisterTeam extends RegisterTenant
+class EditTeamProfile extends EditTenantProfile
 {
     public static function getLabel(): string
     {
-        return 'Criar nova loja';
+        return 'Editar loja';
     }
 
     public function form(Form $form): Form
@@ -36,14 +35,5 @@ class RegisterTeam extends RegisterTenant
                 Select::make('platform_id')
                     ->options(Platform::all()->pluck('name', 'id')),
             ]);
-    }
-
-    protected function handleRegistration(array $data): Store
-    {
-        $store = Store::create($data);
-
-        $store->users()->attach(auth()->guard('web')->user());
-
-        return $store;
     }
 }

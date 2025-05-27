@@ -71,7 +71,7 @@ class User extends Authenticatable implements Auditable, FilamentUser, HasTenant
 
     public function canAccessTenant(Model $tenant): bool
     {
-        return $this->teams()->whereKey($tenant)->exists();
+        return $this->stores()->whereKey($tenant)->exists();
     }
 
     public function canAccessPanel(Panel $panel): bool

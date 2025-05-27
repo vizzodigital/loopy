@@ -4,6 +4,8 @@ declare(strict_types = 1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Tenancy\EditTeamProfile;
+use App\Filament\Pages\Tenancy\RegisterTeam;
 use App\Models\Store;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -59,6 +61,8 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->tenant(Store::class, slugAttribute:'slug')
-            ->tenantMenu();
+            ->tenantMenu()
+            ->tenantRegistration(RegisterTeam::class)
+            ->tenantProfile(EditTeamProfile::class);
     }
 }

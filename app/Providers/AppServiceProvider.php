@@ -100,7 +100,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configGates(): void
     {
-        Gate::before(fn ($user, $ability): ?true => $user->hasRole('Admin') ? true : null);
+        // Gate::before(fn ($user, $ability): ?true => $user->hasRole('Admin') ? true : null);
     }
 
     /**

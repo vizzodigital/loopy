@@ -18,6 +18,7 @@ return new class () extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->foreignId('platform_id')->constrained()->cascadeOnDelete();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
 

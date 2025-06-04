@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Store extends BaseModel
 {
@@ -15,7 +16,15 @@ class Store extends BaseModel
         'name',
         'slug',
         'platform_id',
+        'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 
     public function users(): BelongsToMany
     {
@@ -25,5 +34,10 @@ class Store extends BaseModel
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function integrations(): HasMany
+    {
+        return $this->hasMany(Integration::class);
     }
 }

@@ -18,4 +18,9 @@ class Platform extends BaseModel
     {
         return $this->hasMany(Store::class);
     }
+
+    public function integrations(): HasMany
+    {
+        return $this->hasMany(Integration::class);
+    }
 }

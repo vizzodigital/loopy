@@ -6,7 +6,6 @@ namespace App\Filament\Pages\Tenancy;
 
 use App\Models\Platform;
 use App\Models\Store;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -30,10 +29,17 @@ class RegisterTeam extends RegisterTenant
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state))),
 
-                Hidden::make('slug')
-                    ->unique('stores', 'slug'),
+                TextInput::make('slug')
+                    ->label('Identificador da loja')
+                    ->unique('stores', 'slug')
+                    ->validationMessages([
+                        'unique' => 'O :attribute já está em uso na plataforma.',
+                    ])
+                    ->readOnly()
+                    ->live(onBlur: true),
 
                 Select::make('platform_id')
+                    ->label('Plataforma de e-commerce')
                     ->options(Platform::all()->pluck('name', 'id')),
             ]);
     }
@@ -41,6 +47,11 @@ class RegisterTeam extends RegisterTenant
     protected function handleRegistration(array $data): Store
     {
         $store = Store::create($data);
+
+        $store->integrations()->create([
+            'platform_id' => $data['platform_id'],
+            'webhook' => Str::uuid()->toString(),
+        ]);
 
         $store->users()->attach(auth()->guard('web')->user());
 

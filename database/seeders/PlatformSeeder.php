@@ -15,16 +15,16 @@ class PlatformSeeder extends Seeder
     {
         $platforms = [
             [
-                'name' => 'Yampi',
+                'name' => 'Yampi', //1
             ],
             [
-                'name' => 'Shopify',
+                'name' => 'Shopify', //2
             ],
             [
-                'name' => 'WooCommerce',
+                'name' => 'WooCommerce', //3
             ],
             [
-                'name' => 'PandaStore',
+                'name' => 'PandaStore', //4
             ],
         ];
 

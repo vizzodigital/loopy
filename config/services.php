@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 return [
 
     /*
@@ -13,6 +15,11 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
+
+    'zapi' => [
+        'base_url' => 'https://api.z-api.io/instances/' . env('Z_API_ID') . '/token/' . env('Z_API_TOKEN') . '/',
+        'secure' => env('Z_API_SECURE'),
+    ],
 
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),

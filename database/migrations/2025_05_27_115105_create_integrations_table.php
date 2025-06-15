@@ -2,6 +2,7 @@
 
 declare(strict_types = 1);
 
+use App\Enums\IntegrationTypeEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -18,11 +19,13 @@ return new class () extends Migration
             $table->foreignId('store_id')->constrained()->cascadeOnDelete();
             $table->foreignId('platform_id')->constrained()->cascadeOnDelete();
             $table->uuid('webhook')->unique();
-            $table->string('secret')->nullable();
+            $table->enum('type', IntegrationTypeEnum::getValues());
+            $table->json('configs');
             $table->boolean('is_active')->default(false);
-            $table->timestamp('first_webhook_at')->nullable();
-            $table->timestamp('last_webhook_at')->nullable();
             $table->timestamps();
+
+            $table->index(['store_id', 'platform_id']);
+            $table->index(['store_id', 'is_active']);
         });
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Filament\Resources\IntegrationResource\Pages;
 
 use App\Filament\Resources\IntegrationResource;
@@ -13,7 +15,7 @@ class EditIntegration extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            // Actions\DeleteAction::make(),
         ];
     }
 }

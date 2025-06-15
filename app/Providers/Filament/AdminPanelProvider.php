@@ -34,8 +34,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->registration()
-            ->sidebarWidth('15rem')
+            ->sidebarWidth('20rem')
             ->maxContentWidth(MaxWidth::Full)
+            // ->topNavigation()
             ->colors([
                 'primary' => Color::Amber,
             ])

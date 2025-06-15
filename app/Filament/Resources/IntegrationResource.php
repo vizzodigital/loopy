@@ -9,35 +9,119 @@ use App\Models\Integration;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Support\Enums\IconPosition;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class IntegrationResource extends Resource
 {
+    protected static ?string $tenantOwnershipRelationshipName = 'store';
+
     protected static ?string $model = Integration::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
+
+    protected static ?string $modelLabel = 'Integração';
+
+    protected static ?string $pluralModelLabel = 'Integrações';
+
+    protected static ?string $navigationLabel = 'Integrações';
+
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationGroup = 'INTEGRAÇÕES';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Placeholder::make('storeName')
-                    ->label('Loja')
-                    ->content(fn (Integration $record): string => $record->name),
+                Forms\Components\Section::make('Integração')
+                    ->columns(2)
+                    ->schema([
 
-                Forms\Components\Placeholder::make('platformName')
-                    ->label('Plataforma')
-                    ->content(fn (Integration $record): string => $record->platform->name),
+                        Forms\Components\Group::make()
+                            ->schema([
+                                Forms\Components\Placeholder::make('nameStore')
+                                    ->label('Loja')
+                                    ->content(fn (Integration $record): string => $record->store->name),
 
-                Forms\Components\Placeholder::make('webhookURL')
-                    ->label('Webhook')
-                    ->content(fn (Integration $record): string => env('APP_URL') . '/api/webhook/' . $record->webhook),
+                                Forms\Components\Placeholder::make('webhookURL')
+                                    ->label('Webhook')
+                                    ->visible(fn (Integration $record): bool => $record->platform_id === 1 || $record->platform_id === 2 || $record->platform_id === 3 || $record->platform_id === 4 || $record->platform_id === 7 || $record->platform_id === 8 || $record->platform_id === 9)
+                                    ->content(function (Integration $record) {
+                                        if ($record->platform_id === 1) {
+                                            return env('APP_URL') . '/api/webhook/store/' . $record->webhook;
+                                        }
 
-                Forms\Components\TextInput::make('secret')
-                    ->maxLength(255)
-                    ->default(null),
+                                        if ($record->platform_id === 2) {
+                                            return env('APP_URL') . '/api/webhook/store/' . $record->webhook;
+                                        }
+
+                                        if ($record->platform_id === 3) {
+                                            return env('APP_URL') . '/api/webhook/store/' . $record->webhook;
+                                        }
+
+                                        if ($record->platform_id === 4) {
+                                            return env('APP_URL') . '/api/webhook/store/' . $record->webhook;
+                                        }
+
+                                        if ($record->platform_id === 7) {
+                                            return env('APP_URL') . '/api/webhook/whatsapp/' . $record->webhook;
+                                        }
+
+                                        if ($record->platform_id === 8) {
+                                            return env('APP_URL') . '/api/webhook/zapi/' . $record->webhook;
+                                        }
+
+                                        if ($record->platform_id === 9) {
+                                            return env('APP_URL') . '/api/webhook/waha/' . $record->webhook;
+                                        }
+                                    }),
+
+                                Forms\Components\KeyValue::make('configs')
+                                    ->keyLabel('Chave')
+                                    ->valueLabel('Valor')
+                                    ->addable(false)
+                                    ->deletable(false)
+                                    ->editableKeys(false)
+                                    ->required(),
+                            ]),
+
+                        Forms\Components\Group::make()
+                            ->schema([
+
+                                Forms\Components\Placeholder::make('documentation')
+                                ->label('Instruções de uso')
+                                    ->content(function ($record): HtmlString {
+                                        $platform = $record->platform;
+
+                                        if ($platform->id === 1) {
+                                            //Instruções para Yampi
+                                        }
+
+                                        if ($platform->id === 2) {
+                                            //Instruções para Shopify
+                                        }
+
+                                        $content = '
+                                                <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">' . $record->platform->name . '</h2>
+                                                <ol class="max-w-md space-y-1 text-gray-500 list-disc list-inside dark:text-gray-400">
+                                                    <li>
+                                                        Acesse ...
+                                                    </li>
+                                                    <li>
+                                                        Clique ...
+                                                    </li>
+                                                    <li>
+                                                        Finalize ...
+                                                    </li>
+                                                </ol>
+                                            ';
+
+                                        return new HtmlString($content);
+                                    }),
+                            ]),
+                    ]),
             ]);
     }
 
@@ -48,48 +132,28 @@ class IntegrationResource extends Resource
                 Tables\Columns\TextColumn::make('store.name')
                     ->label('Loja')
                     ->badge()
+                    ->color('primary')
+                    ->numeric()
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('platform.name')
                     ->label('Plataforma')
                     ->badge()
+                    ->color('danger')
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('webhook')
-                    ->label('URL do Webhook')
-                    ->prefix(env('APP_URL') . "/api/webhook/")
-                    ->icon('heroicon-o-document-duplicate')
-                    ->iconPosition(IconPosition::After)
-                    ->copyable()
-                    ->copyMessage('Webhook copiado com sucesso!')
-                    ->copyableState(fn (string $state): string => env('APP_URL') . "/api/webhook/{$state}")
-                    ->copyMessageDuration(1500),
-
-                Tables\Columns\TextColumn::make('secret')
-                    ->label('Chave de Segurança')
-                    ->searchable(),
-
+                    ->label('Identificador'),
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Tipo de Integração'),
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label('Ativo')
+                    ->label('Ativa?')
                     ->boolean(),
-
-                Tables\Columns\TextColumn::make('first_webhook_at')
-                    ->label('Primeiro Webhook')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('last_webhook_at')
-                    ->label('Último Webhook')
-                    ->dateTime('d/m/Y H:i:s')
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Criado em')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Atualizado em')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -102,7 +166,7 @@ class IntegrationResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

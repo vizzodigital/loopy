@@ -4,14 +4,15 @@ declare(strict_types = 1);
 
 namespace App\Filament\Pages\Tenancy;
 
+use App\Enums\IntegrationTypeEnum;
 use App\Models\Platform;
-use Filament\Forms\Components\Hidden;
+use App\Models\Store;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Forms\Set;
 use Filament\Pages\Tenancy\EditTenantProfile;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 
 class EditTeamProfile extends EditTenantProfile
 {
@@ -24,16 +25,32 @@ class EditTeamProfile extends EditTenantProfile
     {
         return $form
             ->schema([
-                TextInput::make('name')
-                    ->label('Loja')
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state))),
+                Section::make()
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('name')
+                        ->label('Loja')
+                        ->required()
+                        ->maxLength(50),
 
-                Hidden::make('slug')
-                    ->unique('stores', 'slug'),
-
-                Select::make('platform_id')
-                    ->options(Platform::all()->pluck('name', 'id')),
+                        Select::make('platform_id')
+                            ->relationship('integrations', 'platform')
+                            ->label('Plataforma de e-commerce')
+                            ->options(Platform::where('type', IntegrationTypeEnum::ECOMMERCE)->pluck('name', 'id')),
+                    ]),
             ]);
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Store
+    {
+        $record->update([
+            'name' => $data['name'],
+        ]);
+
+        $record->integrations()->update([
+            'platform_id' => $data['platform_id'],
+        ]);
+
+        return $record;
     }
 }

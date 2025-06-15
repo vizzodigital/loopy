@@ -4,8 +4,8 @@ declare(strict_types = 1);
 
 namespace App\Models;
 
+use App\Enums\IntegrationTypeEnum;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Integration extends BaseModel
 {
@@ -15,18 +15,17 @@ class Integration extends BaseModel
         'store_id',
         'platform_id',
         'webhook',
-        'secret',
+        'type',
+        'configs',
         'is_active',
-        'first_webhook_at',
-        'last_webhook_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'type' => IntegrationTypeEnum::class,
+            'configs' => 'array',
             'is_active' => 'boolean',
-            'first_webhook_at' => 'datetime',
-            'last_webhook_at' => 'datetime',
         ];
     }
 
@@ -40,22 +39,33 @@ class Integration extends BaseModel
         return $this->belongsTo(Platform::class);
     }
 
-    public function aiContexts(): HasMany
+    public function isType(string $type): bool
     {
-        return $this->hasMany(AiContext::class);
+        return $this->type === $type;
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     public function activate()
     {
+        $configs = $this->configs ?? [];
+
+        $now = now();
+
+        $configs['last_webhook_at'] = $now;
+
         if (!$this->is_active) {
+            $configs['first_webhook_at'] = $now;
             $this->update([
                 'is_active' => true,
-                'first_webhook_at' => now(),
-                'last_webhook_at' => now(),
+                'configs' => $configs,
             ]);
         } else {
             $this->update([
-                'last_webhook_at' => now(),
+                'configs' => $configs,
             ]);
         }
     }

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -34,6 +35,8 @@ class User extends Authenticatable implements Auditable, FilamentUser, HasTenant
         'name',
         'email',
         'password',
+        'is_active',
+        'is_owner',
     ];
 
     /**
@@ -56,12 +59,29 @@ class User extends Authenticatable implements Auditable, FilamentUser, HasTenant
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'is_owner' => 'boolean',
         ];
     }
 
     public function stores(): BelongsToMany
     {
         return $this->belongsToMany(Store::class);
+    }
+
+    public function agents(): HasMany
+    {
+        return $this->hasMany(Agent::class);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active;
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->is_owner;
     }
 
     public function getTenants(Panel $panel): Collection

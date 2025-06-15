@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace App\Jobs;
 
 use App\Models\Store;
+use App\Services\Zapi\ZapiService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -18,6 +19,7 @@ class SendCartRecoveryMessageJob implements ShouldQueue
     use SerializesModels;
 
     public function __construct(
+        protected ZapiService $whatsapp,
         protected Store $store,
         protected string $customerName,
         protected string $phoneNumber,
@@ -28,9 +30,9 @@ class SendCartRecoveryMessageJob implements ShouldQueue
 
     public function handle(): void
     {
-        $prompt = "Create a friendly and persuasive message to recover an abandoned shopping cart. "
-                . "The customer's name is {$this->customerName} and the cart contains: {$this->productList}. "
-                . "Offer a 10% discount if they complete the purchase today. Keep the tone casual and concise.";
+        $prompt = "Crie uma mensagem amigável e persuasiva para recuperar um carrinho de compras abandonado. "
+                . "O nome do cliente é {$this->customerName} e o carrinho contém: {$this->productList}. "
+                . "Ofereça um desconto de 10% se ele concluir a compra hoje. Mantenha o tom casual e conciso.";
 
         $response = OpenAI::chat()->create([
             'model' => 'gpt-4o', // or 'gpt-3.5-turbo' for lower cost

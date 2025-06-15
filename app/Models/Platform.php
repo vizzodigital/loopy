@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace App\Models;
 
+use App\Enums\IntegrationTypeEnum;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Platform extends BaseModel
@@ -12,7 +13,21 @@ class Platform extends BaseModel
 
     protected $fillable = [
         'name',
+        'image',
+        'url',
+        'type',
+        'is_active',
+        'is_beta',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'type' => IntegrationTypeEnum::class,
+            'is_active' => 'boolean',
+            'is_beta' => 'boolean',
+        ];
+    }
 
     public function stores(): HasMany
     {

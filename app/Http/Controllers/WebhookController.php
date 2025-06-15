@@ -4,7 +4,13 @@ declare(strict_types = 1);
 
 namespace App\Http\Controllers;
 
-use App\Jobs\SendCartRecoveryMessageJob;
+use App\Enums\CartStatusEnum;
+use App\Enums\ConversationStatusEnum;
+use App\Enums\IntegrationTypeEnum;
+use App\Jobs\SendFirstAbandonedCartMessageJob;
+use App\Models\AbandonedCart;
+use App\Models\Conversation;
+use App\Models\Customer;
 use App\Models\Integration;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -37,30 +43,16 @@ class WebhookController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        if ($integration->secret && !$this->verifyWebhookSignature($request, $integration)) {
-            Log::warning('Invalid webhook signature', [
-                'webhook' => $webhook,
-                'ip' => $request->ip(),
-            ]);
-
+        if (!$this->verifyWebhookSignature($request, $integration)) {
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 
         $integration->activate();
 
-        $payload = $request->all();
-
-        Log::info('Webhook received', [
-            'webhook' => $webhook,
-            'store_id' => $integration->store_id,
-            'platform_id' => $integration->platform_id,
-            'payload' => $payload,
-        ]);
-
         try {
-            $this->processWebhookData($integration, $request->all());
+            $test = $this->processWebhookData($integration, $request->all());
 
-            return response()->json(['status' => 'success']);
+            return response()->json(['status' => $test], Response::HTTP_OK);
         } catch (\Exception $e) {
             Log::error('Webhook processing failed', [
                 'webhook' => $webhook,
@@ -68,7 +60,7 @@ class WebhookController extends Controller
             ]);
 
             return response()->json([
-                'error' => 'Processing failed',
+                'error' => $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -77,13 +69,13 @@ class WebhookController extends Controller
     {
         switch ($integration->platform_id) {
             case 1: // Yampi
-                return $this->verifyYampiWebhook($request, $integration->secret_key);
+                return $this->verifyYampiWebhook($request, $integration->configs['secret']);
             case 2: // Shopify
                 return $this->verifyShopifyWebhook($request, $integration->secret_key);
-            case 3: // WooCommerce
-                return $this->verifyWooCommerceWebhook($request, $integration->secret_key);
+            case 3: // CartPanda
+                return $this->verifyCartPandaWebhook($request, $integration->secret_key);
             case 4: // WooCommerce
-                return $this->verifyPandaStoreWebhook($request, $integration->secret_key);
+                return $this->verifyWooCommerceWebhook($request, $integration->secret_key);
             default:
                 return true; // verifica ou não
         }
@@ -91,10 +83,10 @@ class WebhookController extends Controller
 
     private function verifyYampiWebhook(Request $request, string $secret)
     {
-        $signature = $request->header('X-Yampi-Signature');
+        $signature = $request->header('X-Yampi-Hmac-SHA256');
         $payload = $request->getContent();
 
-        $calculatedSignature = hash_hmac('sha256', $payload, $secret);
+        $calculatedSignature = base64_encode(hash_hmac('sha256', $payload, $secret, true));
 
         return hash_equals($signature, $calculatedSignature);
     }
@@ -119,7 +111,7 @@ class WebhookController extends Controller
         return hash_equals($signature, $calculatedSignature);
     }
 
-    private function verifyPandaStoreWebhook(Request $request, string $secret)
+    private function verifyCartPandaWebhook(Request $request, string $secret)
     {
         $signature = $request->header('VERIFICAR_KEY');
         $payload = $request->getContent();
@@ -133,24 +125,101 @@ class WebhookController extends Controller
     {
         switch ($integration->platform_id) {
             case 1:
-                $this->processYampiWebhook($integration, $payload);
+                return $this->processYampiWebhook($integration, $payload);
 
                 break;
             case 2:
-                $this->processShopifyWebhook($integration, $payload);
+                return $this->processShopifyWebhook($integration, $payload);
 
                 break;
             case 3:
-                $this->processWooCommerceWebhook($integration, $payload);
+                return $this->processPandaStoreWebhook($integration, $payload);
 
                 break;
             case 4:
-                $this->processPandaStoreWebhook($integration, $payload);
+                return $this->processWooCommerceWebhook($integration, $payload);
 
                 break;
             default:
-                $this->processGenericWebhook($integration, $payload);
+                return $this->processGenericWebhook($integration, $payload);
         }
+    }
+
+    private function processYampiWebhook(Integration $integration, array $payload)
+    {
+        $store = $integration->store;
+
+        $customerData = $payload['resource']['customer']['data'];
+
+        $customer = Customer::updateOrCreate(
+            [
+                'store_id' => $store->id,
+                'external_id' => $payload['resource']['customer_id'],
+            ],
+            [
+                'name' => $customerData['full_name'] ?? trim($customerData['first_name'] . ' ' . $customerData['last_name']),
+                'email' => $customerData['email'],
+                'phone' => $customerData['phone']['formated_number'],
+                'whatsapp' => $customerData['phone']['full_number'], // preenchido via API Waha exists
+            ]
+        );
+
+        $cartData = [
+            'id' => $payload['resource']['id'],
+            'cart_url' => $payload['resource']['simulate_url'],
+            'cart_total' => $payload['resource']['totalizers']['total'],
+            'shipping' => $payload['resource']['totalizers']['shipment'],
+            'shipping_service' => $payload['resource']['shipping_service'],
+            'line_items' => $payload['resource']['spreadsheet'],
+            'abandoned_step' => $payload['resource']['search']['data']['abandoned_step'],
+            'created_at_origin' => $payload['resource'],
+        ];
+
+        $abandonedCart = AbandonedCart::updateOrCreate(
+            [
+                'store_id' => $store->id,
+                'customer_id' => $customer->id,
+                'external_cart_id' => $payload['resource']['id'],
+            ],
+            [
+                'abandonment_reason_id' => null,
+                'cart_data' => $cartData,
+                'customer_data' => $customerData,
+                'total_amount' => $payload['resource']['totalizers']['total'],
+                'status' => CartStatusEnum::ABANDONED,
+            ]
+        );
+
+        $ia = $store->integrations()
+            ->where('type', IntegrationTypeEnum::AI)
+            ->where('is_active', true)
+            ->first();
+
+        $agent = $store->activeAgent();
+
+        $whatsapp = $store->integrations()
+            ->where('type', IntegrationTypeEnum::WHATSAPP)
+            ->first();
+
+        $conversation = Conversation::updateOrCreate(
+            [
+                'store_id' => $store->id,
+                'abandoned_cart_id' => $abandonedCart->id,
+            ],
+            [
+                'store_id' => $store->id,
+                'abandoned_cart_id' => $abandonedCart->id,
+                'status' => ConversationStatusEnum::OPEN,
+                'started_at' => now(),
+            ]
+        );
+
+        SendFirstAbandonedCartMessageJob::dispatch(
+            $conversation,
+            $ia,
+            $whatsapp,
+            $agent
+        );
     }
 
     private function processShopifyWebhook(Integration $integration, array $payload)
@@ -161,28 +230,6 @@ class WebhookController extends Controller
     private function processWooCommerceWebhook(Integration $integration, array $payload)
     {
         // ...
-    }
-
-    private function processYampiWebhook(Integration $integration, array $payload)
-    {
-        $customerName = $payload['customer']['name'] ?? 'customer';
-        $phoneNumber = $payload['customer']['phone'] ?? null;
-        $cartItems = $payload['cart']['items'] ?? [];
-
-        $productNames = collect($cartItems)->pluck('name')->implode(', ');
-
-        if (!$phoneNumber || empty($cartItems)) {
-            Log::warning('Cart has no phone or items, skipping.', compact('payload'));
-
-            return;
-        }
-
-        dispatch(new SendCartRecoveryMessageJob(
-            store: $integration->store,
-            customerName: $customerName,
-            phoneNumber: $phoneNumber,
-            productList: $productNames
-        ));
     }
 
     private function processPandaStoreWebhook(Integration $integration, array $payload)

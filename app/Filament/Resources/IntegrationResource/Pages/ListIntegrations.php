@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Filament\Resources\IntegrationResource\Pages;
 
 use App\Filament\Resources\IntegrationResource;
@@ -13,7 +15,7 @@ class ListIntegrations extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            // Actions\CreateAction::make(),
         ];
     }
 }

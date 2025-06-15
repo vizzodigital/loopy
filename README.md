@@ -1,61 +1,103 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+notificar email:
+bem vindo
+resumo de acesso.(link de acesso)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# Fluxo (racional)
 
-## About Laravel
+## Visão Geral do Fluxo
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Etapa 1: Recebimento do Carrinho Abandonado
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Dados do cliente e do carrinho são persistidos:
+. Customer
+. AbandonedCart (relacionado ao Store)
+O sistema detecta que há um novo carrinho abandonado e dispara um prompt IA inicial.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Etapa 2: Criação da Conversa e Primeira Mensagem
 
-## Learning Laravel
+Criamos uma instância de Conversation:
+. Relacionada ao AbandonedCart
+. Pode ter status (ativa, encerrada, assumida por humano, etc.)
+Criamos o primeiro ConversationMessage:
+. sender_type: AI
+. content: gerado via prompt com contexto do carrinho
+. Armazenado para consulta futura da IA (e auditoria)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Etapa 3: Resposta do Cliente (Webhook do WhatsApp)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Mensagem chega pela rota /webhook/zapi/...
+Identificamos o cliente com base no telefone (armazenado em Customer)
+Verificamos se ele está vinculado a um AbandonedCart com Conversation ativa.
+Criamos nova ConversationMessage:
+. sender_type: Customer
+. content: texto da mensagem recebida
+A IA processa essa resposta e responde (se não for humano o último remetente).
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Etapa 4: Continuação ou Encerramento da Conversa
 
-## Laravel Sponsors
+AI responde, investigando o abandonment_reason com mais mensagens.
+Quando um motivo fica evidente, associamos ao AbandonedCart.
+Se a venda for recuperada, atualizamos:
+. status do AbandonedCart para RECOVERED
+. total_amount_recovered
+Se um atendente humano entra, alteramos o status da conversa e paramos as mensagens da IA.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Lógica de Contexto
 
-### Premium Partners
+`$context = $conversation->messages()->latest()->take(10)->get();`
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Resumo
 
-## Contributing
+Models
+User: name, email, password, is_active, is_owner
+Relationship: Store::class BelongsToMany, Agent::class HasMany
+Pivot: store_user
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Platform: name, type, is_active
+Enum: IntegrationTypeEnum: ecommerce, ai, whatsapp, social
+Relationship: Store::class HasMany, Integration::class HasMany
 
-## Code of Conduct
+Plan: name, slug, price, description, features, is_active
+Relationship: Store::class HasMany
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Store: name, slug, is_active, plan_id
+Relationship: User::class BelongsToMany, Plan::class BelongsTo, Customer::class HasMany, Integration::class HasMany, Agent::class BelongsToMany
+Pivot: store_user, agent_store
 
-## Security Vulnerabilities
+Integration: store_id, webhook, type, configs, is_active
+Enum: IntegrationTypeEnum: ecommerce, ai, whatsapp, social
+Relationship: Store::class BelongsTo
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Agent: user_id, name, description, model, temperature, top_p, frequency_penalty, presence_penalty, max_tokens, system_prompt, is_active, is_test, is_default
+Relationship: User::class BelongsTo, Store::class BelongsToMany
+Pivot: agent_store
 
-## License
+Customer: store_id, external_id, name, email, phone, whatsapp
+Relationship: Store::class BelongsTo, AbandonedCart::class HasMany
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+AbandonedCart: store_id, customer_id, external_cart_id, cart_data, customer_data, total_amount, total_amount_recovered, status, abandonment_reason_id
+Relationship: Store::class BelongsTo, Customer::class BelongsTo, AbandonmentReason::class BelongsTo, Conversation::class HasOne
+Enum: CartStatusEnum: abandoned, recovered, lost
+
+AbandonmentReason: name, description, is_active
+Relationship: AbandonedCart::class HasMany
+
+Conversation: abandoned_cart_id, status, started_at, closed_at, human_assumed_at, human_user_id
+Relationship: AbandonedCart::class BelongsTo, ConversationMessage::class HasMany, User::class BelongsTo (human_user_id)
+Enum: ConversationStatusEnum: open, closed, pending, human
+
+ConversationMessage: conversation_id, sender_type, content, payload, was_read, sent_at
+Relationship: Conversation::class BelongsTo
+Enum: ConversationSenderTypeEnum: customer, ia, human
+
+Routes: api.php
+Route::post('/webhook/store/{webhook}', WebhookStoreController::class); //invokable: Recebe das plataformas de e-commerce.
+
+Route::post('/webhook/whatsapp/official/{webhook}', WebhookWhatsappOfficialController::class); //invokable: Recebe da api do whatsapp business
+
+Route::post('/webhook/whatsapp/zapi/{webhook}', WebhookWhatsappZapiController::class); //invokable: Recebe da api Z-Api: whatsapp não oficial
+
+Route::post('/webhook/whatsapp/waha/{webhook}', WebhookWhatsappWahaController::class); //invokable: Recebe da api Waha: whatsapp não oficial
+
+Routes: web.php
+Route::post('/agents/install-defaults', InstallDefaultAgentsController::class); //invokable: instala os agentes defaults do sistema (modelos).

@@ -23,7 +23,7 @@ class WahaService
 
     public function checkExists(string $phone): array
     {
-        $url = $this->baseUrl . 'check-exists' . '?phone=' . $phone . '&session=' . $this->session;
+        $url = $this->baseUrl . '/check-exists' . '?phone=' . $phone . '&session=' . $this->session;
 
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',

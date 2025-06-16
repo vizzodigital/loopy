@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace App\Services\Zapi;
 
+use App\Models\Integration;
 use Illuminate\Support\Facades\Http;
 
 class ZapiService
@@ -12,10 +13,11 @@ class ZapiService
 
     protected $clientToken;
 
-    public function __construct()
+    public function __construct(protected Integration $integration)
     {
-        $this->baseUrl = config('services.zapi.base_url');
-        $this->clientToken = config('services.zapi.secure');
+        $this->baseUrl = 'https://api.z-api.io/instances/' . $this->integration->configs['instance'] . '/token/' . $this->integration->configs['api_token'] . '/';
+
+        $this->clientToken = $this->integration->configs['security_token'];
     }
 
     /**

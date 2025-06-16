@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace App\Services\OpenAI;
 
+use App\Enums\IntegrationTypeEnum;
 use App\Models\Agent;
 use App\Models\Conversation;
 use App\Models\ConversationMessage;
@@ -20,7 +21,7 @@ class AiConversationService
 
     public function __construct(Integration $integration, Agent $agent)
     {
-        if ($integration->type !== 'ai') {
+        if ($integration->type !== IntegrationTypeEnum::AI) {
             throw new \InvalidArgumentException('Integration type must be AI');
         }
 

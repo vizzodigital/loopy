@@ -108,6 +108,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function setupLogViewer(): void
     {
-        LogViewer::auth(fn ($request): bool => $request->user()?->email === 'wagnerbugs@gmail.com');
+        // LogViewer::auth(fn ($request): bool => $request->user()?->email === 'wagnerbugs@gmail.com');
+        LogViewer::auth(fn ($request): bool => true);
     }
 }

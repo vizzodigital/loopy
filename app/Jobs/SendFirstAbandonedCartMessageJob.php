@@ -13,15 +13,20 @@ use App\Models\ConversationMessage;
 use App\Models\Integration;
 use App\Services\Meta\WhatsAppService;
 use App\Services\Zapi\ZapiService;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use OpenAI;
+use RuntimeException;
 
 class SendFirstAbandonedCartMessageJob implements ShouldQueue
 {
+    use Dispatchable;
+    use InteractsWithQueue;
     use Queueable;
-
-    protected OpenAI\Client $client;
+    use SerializesModels;
 
     public function __construct(
         protected Conversation $conversation,
@@ -29,23 +34,24 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
         protected Integration $whatsappIntegration,
         protected Agent $agent
     ) {
-        $apiKey = $ia->configs['api_key'] ?? null;
-
-        if (!$apiKey) {
-            throw new \RuntimeException('AI API key is not configured.');
-        }
-
-        $this->client = OpenAI::client($apiKey);
     }
 
     public function handle(): void
     {
         $customer = $this->conversation->abandonedCart->customer;
 
+        $apiKey = $this->ia->configs['api_key'] ?? null;
+
+        if (!$apiKey) {
+            throw new RuntimeException('AI API key is not configured.');
+        }
+
+        $client = OpenAI::client($apiKey);
+
         $rules = <<<RULES
             Responda estritamente no seguinte formato JSON:
             {
-                "close": (true ou false), // true se o cliente deseja encerrar a conversa, false caso contrário,
+                "close": (true ou false),
                 "answer": "sua resposta ao cliente, deixe vazio se close for true",
                 "reason": "um dos seguintes: price_concern, product_question, shipping_doubt, payment_issue, technical_difficulty, discount_request, trust_issue, cart_confusion, left_by_mistake ou other"
             }
@@ -67,7 +73,7 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
             ],
         ];
 
-        $response = $this->client->chat()->create([
+        $response = $client->chat()->create([
             'model' => $this->agent->model,
             'messages' => $messages,
             'temperature' => $this->agent->temperature,
@@ -80,21 +86,20 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
         $content = $response['choices'][0]['message']['content'] ?? null;
 
         if (!$content) {
-            throw new \RuntimeException('AI response is empty.');
+            throw new RuntimeException('AI response is empty.');
         }
 
-        // Extrai o JSON mesmo que tenha texto adicional
         preg_match('/\{.*\}/s', $content, $matches);
         $jsonString = $matches[0] ?? null;
 
         if (!$jsonString) {
-            throw new \RuntimeException('No JSON found in AI response.');
+            throw new RuntimeException('No JSON found in AI response.');
         }
 
         try {
             $parsed = json_decode($jsonString, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            throw new \RuntimeException('Failed to parse AI response as JSON: ' . $e->getMessage());
+            throw new RuntimeException('Failed to parse AI response as JSON: ' . $e->getMessage());
         }
 
         $close = filter_var($parsed['close'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -123,7 +128,7 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
             'abandonment_reason_id' => AbandonmentReason::where('name', $reason)->value('id'),
         ]);
 
-        // Fecha a conversa se for o caso
+        // Se deve fechar
         if ($close) {
             $this->conversation->update([
                 'status' => ConversationStatusEnum::CLOSED,
@@ -132,6 +137,7 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
             return;
         }
 
+        // Registra mensagem da IA
         ConversationMessage::create([
             'store_id' => $this->conversation->store_id,
             'conversation_id' => $this->conversation->id,
@@ -141,18 +147,15 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
             'sent_at' => now(),
         ]);
 
+        // Envia via WhatsApp
         $whatsAppService = match ($this->whatsappIntegration->platform_id) {
             7 => new WhatsAppService($this->whatsappIntegration),
             8 => new ZapiService($this->whatsappIntegration),
-            default => throw new \RuntimeException('WhatsApp service not configured or unsupported platform.'),
+            default => throw new RuntimeException('WhatsApp service not configured or unsupported platform.'),
         };
 
-        if (!$whatsAppService) {
-            throw new \RuntimeException('WhatsApp service not configured or unsupported platform.');
-        }
-
         if (empty($customer->whatsapp)) {
-            throw new \RuntimeException('Customer WhatsApp number is not set.');
+            throw new RuntimeException('Customer WhatsApp number is not set.');
         }
 
         $whatsAppService->sendText($customer->whatsapp, $answer);

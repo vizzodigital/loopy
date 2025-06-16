@@ -50,31 +50,31 @@ class IntegrationResource extends Resource
                                     ->visible(fn (Integration $record): bool => $record->platform_id === 1 || $record->platform_id === 2 || $record->platform_id === 3 || $record->platform_id === 4 || $record->platform_id === 7 || $record->platform_id === 8 || $record->platform_id === 9)
                                     ->content(function (Integration $record) {
                                         if ($record->platform_id === 1) {
-                                            return env('APP_URL') . '/api/webhook/store/' . $record->webhook;
+                                            return config('infynia.website') . '/api/webhook/store/' . $record->webhook;
                                         }
 
                                         if ($record->platform_id === 2) {
-                                            return env('APP_URL') . '/api/webhook/store/' . $record->webhook;
+                                            return config('infynia.website') . '/api/webhook/store/' . $record->webhook;
                                         }
 
                                         if ($record->platform_id === 3) {
-                                            return env('APP_URL') . '/api/webhook/store/' . $record->webhook;
+                                            return config('infynia.website') . '/api/webhook/store/' . $record->webhook;
                                         }
 
                                         if ($record->platform_id === 4) {
-                                            return env('APP_URL') . '/api/webhook/store/' . $record->webhook;
+                                            return config('infynia.website') . '/api/webhook/store/' . $record->webhook;
                                         }
 
                                         if ($record->platform_id === 7) {
-                                            return env('APP_URL') . '/api/webhook/whatsapp/' . $record->webhook;
+                                            return config('infynia.website') . '/api/webhook/whatsapp/official/' . $record->webhook;
                                         }
 
                                         if ($record->platform_id === 8) {
-                                            return env('APP_URL') . '/api/webhook/zapi/' . $record->webhook;
+                                            return config('infynia.website') . '/api/webhook/whatsapp/z-api/' . $record->webhook;
                                         }
 
                                         if ($record->platform_id === 9) {
-                                            return env('APP_URL') . '/api/webhook/waha/' . $record->webhook;
+                                            return config('infynia.website') . '/api/webhook/whatsapp/z-api/' . $record->webhook;
                                         }
                                     }),
 

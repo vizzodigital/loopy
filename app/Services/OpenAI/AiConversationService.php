@@ -4,7 +4,6 @@ declare(strict_types = 1);
 
 namespace App\Services\OpenAI;
 
-use App\Enums\IntegrationTypeEnum;
 use App\Models\Agent;
 use App\Models\Conversation;
 use App\Models\ConversationMessage;
@@ -21,14 +20,6 @@ class AiConversationService
 
     public function __construct(Integration $integration, Agent $agent)
     {
-        if ($integration->type !== IntegrationTypeEnum::AI) {
-            throw new \InvalidArgumentException('Integration type must be AI');
-        }
-
-        if (!$agent->is_active) {
-            throw new \InvalidArgumentException('Agent must be active');
-        }
-
         $this->integration = $integration;
         $this->agent = $agent;
 
@@ -42,42 +33,12 @@ class AiConversationService
     }
 
     /**
-     * Envia uma mensagem para IA com o contexto da conversa.
-     */
-    public function sendMessage(Conversation $conversation, ?string $userMessage = null): ConversationMessage
-    {
-        $messages = $this->buildMessages($conversation, $userMessage);
-
-        $response = $this->client->chat()->create([
-            'model' => $this->agent->model,
-            'messages' => $messages,
-            'temperature' => $this->agent->temperature,
-            'top_p' => $this->agent->top_p ?? 1,
-            'frequency_penalty' => $this->agent->frequency_penalty,
-            'presence_penalty' => $this->agent->presence_penalty,
-            'max_tokens' => $this->agent->max_tokens,
-        ])->toArray();
-
-        $content = $response['choices'][0]['message']['content'] ?? null;
-
-        return ConversationMessage::create([
-            'store_id' => $conversation->store_id,
-            'conversation_id' => $conversation->id,
-            'sender_type' => 'ai',
-            'content' => $content,
-            'payload' => $response,
-            'data' => null,
-        ]);
-    }
-
-    /**
      * Monta o histórico da conversa no formato OpenAI.
      */
     protected function buildMessages(Conversation $conversation, ?string $newUserMessage = null): array
     {
         $history = ConversationMessage::where('conversation_id', $conversation->id)
             ->orderBy('created_at')
-            ->take(10)
             ->get();
 
         $messages = [];
@@ -85,21 +46,27 @@ class AiConversationService
         if (!empty($this->agent->system_prompt)) {
             $messages[] = [
                 'role' => 'system',
-                'content' => $this->agent->system_prompt,
+                'content' => $this->agent->system_prompt . ' ' . $conversation->system_prompt,
             ];
         }
 
         foreach ($history as $msg) {
+            $prefix = match ($msg->sender_type) {
+                'customer' => 'Cliente:',
+                'human' => 'Atendente:',
+                'ai' => '',
+            };
+
             $messages[] = [
                 'role' => $msg->sender_type === 'ai' ? 'assistant' : 'user',
-                'content' => $msg->content,
+                'content' => trim($prefix . ' ' . $msg->content),
             ];
         }
 
         if ($newUserMessage) {
             $messages[] = [
                 'role' => 'user',
-                'content' => $newUserMessage,
+                'content' => 'Cliente: ' . $newUserMessage,
             ];
         }
 

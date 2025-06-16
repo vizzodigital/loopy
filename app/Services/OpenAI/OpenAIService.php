@@ -73,4 +73,23 @@ class OpenAIService
             'max_tokens' => $this->agent->max_tokens,
         ])->toArray();
     }
+
+    public function transcribeAudio(string $filePath): ?string
+    {
+        $apiKey = $this->integration->configs['api_key'] ?? null;
+
+        if (!$apiKey) {
+            throw new \RuntimeException('OpenAI API key is missing.');
+        }
+
+        $client = OpenAI::client($apiKey);
+
+        $result = $client->audio()->transcribe([
+            'model' => 'whisper-1',
+            'file' => fopen($filePath, 'r'),
+            'language' => 'pt',
+        ]);
+
+        return $result['text'] ?? null;
+    }
 }

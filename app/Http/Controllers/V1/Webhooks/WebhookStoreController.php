@@ -8,11 +8,14 @@ use App\Enums\CartStatusEnum;
 use App\Enums\ConversationStatusEnum;
 use App\Enums\IntegrationTypeEnum;
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckExistsPhoneJob;
 use App\Jobs\SendFirstAbandonedCartMessageJob;
 use App\Models\AbandonedCart;
 use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\Integration;
+use App\Services\CartRecovery\PlatformPromptResolver;
+use App\Services\Waha\WahaService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -49,9 +52,9 @@ class WebhookStoreController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        if (!$this->verifyWebhookSignature($request, $integration)) {
-            return response()->json(['error' => 'Invalid signature'], 401);
-        }
+        // if (!$this->verifyWebhookSignature($request, $integration)) {
+        //     return response()->json(['error' => 'Invalid signature'], 401);
+        // }
 
         $integration->activate();
 
@@ -154,7 +157,6 @@ class WebhookStoreController extends Controller
     private function processYampiWebhook(Integration $integration, array $payload)
     {
         $store = $integration->store;
-
         $customerData = $payload['resource']['customer']['data'];
 
         $customer = Customer::updateOrCreate(
@@ -166,20 +168,13 @@ class WebhookStoreController extends Controller
                 'name' => $customerData['full_name'] ?? trim($customerData['first_name'] . ' ' . $customerData['last_name']),
                 'email' => $customerData['email'],
                 'phone' => $customerData['phone']['formated_number'],
-                'whatsapp' => $customerData['phone']['full_number'], // preenchido via API Waha exists
+                'whatsapp' => preg_replace('/[^0-9]/', '', $customerData['phone']['whatsapp_link']),
             ]
         );
 
-        $cartData = [
-            'id' => $payload['resource']['id'],
-            'cart_url' => $payload['resource']['simulate_url'],
-            'cart_total' => $payload['resource']['totalizers']['total'],
-            'shipping' => $payload['resource']['totalizers']['shipment'],
-            'shipping_service' => $payload['resource']['shipping_service'],
-            'line_items' => $payload['resource']['spreadsheet'],
-            'abandoned_step' => $payload['resource']['search']['data']['abandoned_step'],
-            'created_at_origin' => $payload['resource'],
-        ];
+        $wahaService = new WahaService();
+
+        CheckExistsPhoneJob::dispatch($wahaService, $customer);
 
         $abandonedCart = AbandonedCart::updateOrCreate(
             [
@@ -189,7 +184,7 @@ class WebhookStoreController extends Controller
             ],
             [
                 'abandonment_reason_id' => null,
-                'cart_data' => $cartData,
+                'cart_data' => $payload,
                 'customer_data' => $customerData,
                 'total_amount' => $payload['resource']['totalizers']['total'],
                 'status' => CartStatusEnum::ABANDONED,
@@ -207,6 +202,9 @@ class WebhookStoreController extends Controller
             ->where('type', IntegrationTypeEnum::WHATSAPP)
             ->first();
 
+        $promptBuilder = PlatformPromptResolver::make(1);
+        $systemPrompt = $promptBuilder->buildSystemPrompt($payload);
+
         $conversation = Conversation::updateOrCreate(
             [
                 'store_id' => $store->id,
@@ -216,6 +214,7 @@ class WebhookStoreController extends Controller
                 'store_id' => $store->id,
                 'abandoned_cart_id' => $abandonedCart->id,
                 'status' => ConversationStatusEnum::OPEN,
+                'system_prompt' => $systemPrompt,
                 'started_at' => now(),
             ]
         );

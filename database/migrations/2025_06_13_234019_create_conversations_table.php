@@ -19,6 +19,7 @@ return new class () extends Migration
             $table->foreignId('store_id')->constrained()->cascadeOnDelete();
             $table->foreignId('abandoned_cart_id')->constrained()->cascadeOnDelete();
             $table->enum('status', ConversationStatusEnum::getValues())->default(ConversationStatusEnum::OPEN);
+            $table->text('system_prompt')->nullable();
             $table->dateTime('started_at')->nullable();
             $table->dateTime('closed_at')->nullable();
             $table->dateTime('human_assumed_at')->nullable();

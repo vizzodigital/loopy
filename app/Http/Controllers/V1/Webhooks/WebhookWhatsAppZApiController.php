@@ -4,11 +4,12 @@ declare(strict_types = 1);
 
 namespace App\Http\Controllers\V1\Webhooks;
 
+use App\Enums\ConversationSenderTypeEnum;
 use App\Enums\ConversationStatusEnum;
 use App\Enums\IntegrationTypeEnum;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendSequenceAbandonedCartMessageJob;
-use App\Jobs\TranscribeAudioJob;
+use App\Jobs\TranscribeAudioMessageJob;
 use App\Models\Conversation;
 use App\Models\ConversationMessage;
 use App\Models\Customer;
@@ -159,19 +160,26 @@ class WebhookWhatsAppZApiController extends Controller
             return;
         }
 
+        if (
+            in_array($conversation->status, [
+                ConversationStatusEnum::HUMAN,
+                ConversationStatusEnum::CLOSED,
+            ])
+        ) {
+            return;
+        }
+
         if ($fromMe) {
             if ($this->isMessageFromAi($conversation, $message)) {
-                // Mensagem foi enviada pela IA, só ignorar
                 return;
             }
 
-            // Humano assumiu
             $conversation->update(['status' => ConversationStatusEnum::HUMAN]);
 
             ConversationMessage::create([
                 'store_id' => $conversation->store_id,
                 'conversation_id' => $conversation->id,
-                'sender_type' => 'human',
+                'sender_type' => ConversationSenderTypeEnum::HUMAN,
                 'content' => $message,
                 'payload' => $payload,
             ]);
@@ -182,7 +190,7 @@ class WebhookWhatsAppZApiController extends Controller
         ConversationMessage::create([
             'store_id' => $conversation->store_id,
             'conversation_id' => $conversation->id,
-            'sender_type' => 'customer',
+            'sender_type' => ConversationSenderTypeEnum::CUSTOMER,
             'content' => $message,
             'payload' => $payload,
         ]);
@@ -208,9 +216,19 @@ class WebhookWhatsAppZApiController extends Controller
 
     public function resolveAudio(Conversation $conversation, array $payload, bool $fromMe)
     {
+        $store = $conversation->store;
         $audioUrl = $payload['audio']['audioUrl'] ?? null;
 
         if (empty($audioUrl)) {
+            return;
+        }
+
+        if (
+            in_array($conversation->status, [
+                ConversationStatusEnum::HUMAN,
+                ConversationStatusEnum::CLOSED,
+            ])
+        ) {
             return;
         }
 
@@ -220,7 +238,7 @@ class WebhookWhatsAppZApiController extends Controller
             ConversationMessage::create([
                 'store_id' => $conversation->store_id,
                 'conversation_id' => $conversation->id,
-                'sender_type' => 'human',
+                'sender_type' => ConversationSenderTypeEnum::HUMAN,
                 'content' => '[Áudio enviado pelo humano]',
                 'payload' => $payload,
                 'sent_at' => now(),
@@ -232,14 +250,25 @@ class WebhookWhatsAppZApiController extends Controller
         $conversationMessage = ConversationMessage::create([
             'store_id' => $conversation->store_id,
             'conversation_id' => $conversation->id,
-            'sender_type' => 'customer',
-            'content' => '[Áudio recebido]', // Temporário
+            'sender_type' => ConversationSenderTypeEnum::CUSTOMER,
+            'content' => '[Áudio recebido]', // Vai ser atualizado depois da transcrição
             'payload' => $payload,
             'sent_at' => now(),
         ]);
 
-        // Job de transcrição
-        TranscribeAudioJob::dispatch($conversationMessage);
+        $ia = $store->integrations()
+           ->where('type', IntegrationTypeEnum::AI)
+           ->where('is_active', true)
+           ->first();
+
+        $agent = $store->activeAgent();
+
+        TranscribeAudioMessageJob::dispatch(
+            $conversationMessage,
+            $conversation,
+            $ia,
+            $agent
+        );
     }
 
     private function isMessageFromAi(Conversation $conversation, string $message): bool

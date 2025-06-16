@@ -16,6 +16,7 @@ class Conversation extends BaseModel
         'store_id',
         'abandoned_cart_id',
         'status',
+        'system_prompt',
         'started_at',
         'closed_at',
         'human_assumed_at',

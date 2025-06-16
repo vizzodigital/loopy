@@ -16,6 +16,12 @@ return [
     |
     */
 
+    'waha' => [
+        'base_url' => env('WAHA_BASE_URL'),
+        'token' => env('WAHA_TOKEN'),
+        'session' => env('WAHA_SESSION'),
+    ],
+
     'zapi' => [
         'base_url' => 'https://api.z-api.io/instances/' . env('Z_API_ID') . '/token/' . env('Z_API_TOKEN') . '/',
         'secure' => env('Z_API_SECURE'),

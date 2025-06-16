@@ -15,7 +15,6 @@ use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\Integration;
 use App\Services\CartRecovery\PlatformPromptResolver;
-use App\Services\Waha\WahaService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -172,9 +171,7 @@ class WebhookStoreController extends Controller
             ]
         );
 
-        $wahaService = new WahaService();
-
-        CheckExistsPhoneJob::dispatch($wahaService, $customer);
+        CheckExistsPhoneJob::dispatch($customer);
 
         $abandonedCart = AbandonedCart::updateOrCreate(
             [

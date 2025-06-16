@@ -13,18 +13,16 @@ class CheckExistsPhoneJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(protected WahaService $wahaService, protected Customer $customer)
+    public function __construct(protected Customer $customer)
     {
         //
     }
 
     public function handle(): void
     {
-        $response = $this->wahaService->checkExists($this->customer->whatsapp);
+        $wahaService = new WahaService();
 
-        if ($response['numberExists'] === false) {
-            return;
-        }
+        $response = $wahaService->checkExists($this->customer->phone);
 
         $this->customer->update([
             'whatsapp' => preg_replace('/[^0-9]/', '', $response['chatId']),

@@ -73,7 +73,6 @@ class SendSequenceAbandonedCartMessageJob implements ShouldQueue
             ],
         ];
 
-        // Carrega histórico
         $histories = ConversationMessage::where('conversation_id', $this->conversation->id)
             ->orderBy('created_at', 'desc')
             ->take(20)
@@ -98,7 +97,6 @@ class SendSequenceAbandonedCartMessageJob implements ShouldQueue
             ];
         }
 
-        // Consulta OpenAI
         $response = $client->chat()->create([
             'model' => $this->agent->model,
             'messages' => $messages,
@@ -149,12 +147,10 @@ class SendSequenceAbandonedCartMessageJob implements ShouldQueue
             $reason = 'other';
         }
 
-        // Atualiza motivo no carrinho
         $this->conversation->abandonedCart->update([
             'abandonment_reason_id' => AbandonmentReason::where('name', $reason)->value('id'),
         ]);
 
-        // Fecha a conversa se necessário
         if ($close) {
             $this->conversation->update([
                 'status' => ConversationStatusEnum::CLOSED,
@@ -163,7 +159,6 @@ class SendSequenceAbandonedCartMessageJob implements ShouldQueue
             return;
         }
 
-        // Cria mensagem no histórico
         $conversationMessage = ConversationMessage::create([
             'store_id' => $this->conversation->store_id,
             'conversation_id' => $this->conversation->id,
@@ -173,7 +168,6 @@ class SendSequenceAbandonedCartMessageJob implements ShouldQueue
             'sent_at' => now(),
         ]);
 
-        // Envia via WhatsApp
         $whatsAppService = match ($this->whatsappIntegration->platform_id) {
             7 => new WhatsAppService($this->whatsappIntegration),
             8 => new ZapiService($this->whatsappIntegration),

@@ -11,7 +11,6 @@ use App\Models\Integration;
 use App\Services\OpenAI\OpenAIService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -31,9 +30,6 @@ class TranscribeAudioMessageJob implements ShouldQueue
         //
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
         $audioUrl = $this->message->payload['audio']['audioUrl'] ?? null;
@@ -62,17 +58,11 @@ class TranscribeAudioMessageJob implements ShouldQueue
             $this->conversation,
             $this->conversation->store->integrations()
                 ->where('type', 'ai')
-                ->where('is_active', true)
                 ->first(),
             $this->conversation->store->integrations()
                 ->where('type', 'whatsapp')
                 ->first(),
             $this->conversation->store->activeAgent()
         ));
-    }
-
-    public function middleware(): array
-    {
-        return [new WithoutOverlapping($this->conversation->id)];
     }
 }

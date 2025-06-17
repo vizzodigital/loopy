@@ -123,12 +123,10 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
             $reason = 'other';
         }
 
-        // Atualiza motivo no carrinho
         $this->conversation->abandonedCart->update([
             'abandonment_reason_id' => AbandonmentReason::where('name', $reason)->value('id'),
         ]);
 
-        // Se deve fechar
         if ($close) {
             $this->conversation->update([
                 'status' => ConversationStatusEnum::CLOSED,
@@ -137,7 +135,6 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
             return;
         }
 
-        // Registra mensagem da IA
         ConversationMessage::create([
             'store_id' => $this->conversation->store_id,
             'conversation_id' => $this->conversation->id,
@@ -147,7 +144,6 @@ class SendFirstAbandonedCartMessageJob implements ShouldQueue
             'sent_at' => now(),
         ]);
 
-        // Envia via WhatsApp
         $whatsAppService = match ($this->whatsappIntegration->platform_id) {
             7 => new WhatsAppService($this->whatsappIntegration),
             8 => new ZapiService($this->whatsappIntegration),

@@ -80,15 +80,15 @@ class SendSequenceAbandonedCartMessageJob implements ShouldQueue
 
         foreach ($histories as $history) {
             $role = match ($history->sender_type) {
-                ConversationSenderTypeEnum::CUSTOMER->value,
-                ConversationSenderTypeEnum::HUMAN->value => 'user',
-                ConversationSenderTypeEnum::AI->value => 'assistant',
+                ConversationSenderTypeEnum::CUSTOMER,
+                ConversationSenderTypeEnum::HUMAN => 'user',
+                ConversationSenderTypeEnum::AI => 'assistant',
             };
 
             $prefix = match ($history->sender_type) {
-                ConversationSenderTypeEnum::CUSTOMER->value => 'Cliente:',
-                ConversationSenderTypeEnum::HUMAN->value => 'Atendente:',
-                ConversationSenderTypeEnum::AI->value => '',
+                ConversationSenderTypeEnum::CUSTOMER => 'Cliente:',
+                ConversationSenderTypeEnum::HUMAN => 'Atendente:',
+                ConversationSenderTypeEnum::AI => '',
             };
 
             $messages[] = [

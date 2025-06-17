@@ -74,7 +74,7 @@ class SendSequenceAbandonedCartMessageJob implements ShouldQueue
         ];
 
         $histories = ConversationMessage::where('conversation_id', $this->conversation->id)
-            ->orderBy('created_at', 'desc')
+            // ->orderBy('created_at', 'desc')
             ->take(20)
             ->get();
 

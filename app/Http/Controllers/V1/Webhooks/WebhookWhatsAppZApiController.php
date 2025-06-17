@@ -23,6 +23,11 @@ class WebhookWhatsAppZApiController extends Controller
 {
     public function __invoke(Request $request, string $webhook)
     {
+        Log::info('Webhook received', [
+            'webhook' => $webhook,
+            'data' => $request->all(),
+        ]);
+
         if (!Str::isUuid($webhook)) {
             return response()->json([
                 'error' => 'Invalid webhook format',

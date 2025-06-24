@@ -14,3 +14,7 @@ Route::post('/webhook/whatsapp/z-api/{webhook}', WebhookWhatsAppZApiController::
 //Meta WhatsApp Business API
 Route::get('/webhook/whatsapp/official/{webhook}', WhatsAppGetController::class)->name('webhook.whatsapp.official.verify');
 Route::post('/webhook/whatsapp/official/{webhook}', WhatsAppController::class)->name('webhook.whatsapp.official.receive');
+
+Route::post('/api/shopify/gdpr/customer-data-request', fn () => response()->json());
+Route::post('/api/shopify/gdpr/customer-erasure', fn () => response()->json());
+Route::post('/api/shopify/gdpr/shop-erasure', fn () => response()->json());

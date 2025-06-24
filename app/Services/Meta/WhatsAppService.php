@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
-    protected string $baseUrl = 'https://graph.facebook.com/v20.0';
+    protected string $baseUrl = 'https://graph.facebook.com/v23.0';
 
     protected string $accessToken;
 

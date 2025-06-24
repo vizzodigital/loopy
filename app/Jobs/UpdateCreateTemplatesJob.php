@@ -37,6 +37,8 @@ class UpdateCreateTemplatesJob implements ShouldQueue
                     $paging = $response['paging'] ?? null;
 
                     foreach ($templates as $templateData) {
+                        $body = $this->extractBody($templateData['components']);
+                        $examples = $this->extractExamples($body);
                         Template::updateOrCreate(
                             [
                                 'integration_id' => $this->integration->id,
@@ -47,7 +49,8 @@ class UpdateCreateTemplatesJob implements ShouldQueue
                                 'name' => $templateData['name'],
                                 'language' => $templateData['language'],
                                 'category' => $templateData['category'],
-                                'body' => $this->extractBody($templateData['components']),
+                                'body' => $body,
+                                'examples' => $examples,
                                 'components' => $templateData['components'],
                                 'status' => $templateData['status'],
                                 'payload' => $templateData, // Armazena o payload completo
@@ -78,5 +81,25 @@ class UpdateCreateTemplatesJob implements ShouldQueue
         }
 
         return null;
+    }
+
+    protected function extractExamples(?string $body): ?array
+    {
+        if (!$body) {
+            return null;
+        }
+
+        preg_match_all('/{{\s*(\w+)\s*}}/', $body, $matches);
+        $variables = collect($matches[1])->unique()->values();
+
+        if ($variables->isEmpty()) {
+            return null;
+        }
+
+        // Para o MVP, podemos deixar examples vazio ou mockar valores padrão
+        return $variables->map(fn ($var) => [
+            'name' => $var,
+            'example' => "example_{$var}", // Exemplo genérico, ajustar conforme necessário
+        ])->toArray();
     }
 }

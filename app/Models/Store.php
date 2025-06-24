@@ -46,6 +46,11 @@ class Store extends BaseModel
         return $this->hasMany(Integration::class);
     }
 
+    public function templates(): HasMany
+    {
+        return $this->hasMany(Template::class);
+    }
+
     public function agents(): BelongsToMany
     {
         return $this->belongsToMany(Agent::class)

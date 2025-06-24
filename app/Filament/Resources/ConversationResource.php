@@ -80,7 +80,7 @@ class ConversationResource extends Resource
             ->recordUrl(null)
             ->columns([
 
-                Tables\Columns\TextColumn::make('abandonedCart.id')
+                Tables\Columns\TextColumn::make('abandonedCart.customer.name')
                     ->label('Carrinho Abandonado')
                     ->numeric()
                     ->sortable(),
@@ -101,12 +101,12 @@ class ConversationResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('human_assumed_at')
-                    ->label('Assumido pelo humano em')
+                    ->label('Assumido (Colaborador)')
                     ->dateTime('d/m/Y H:i:s')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('humanUser.name')
-                    ->label('Usuário')
+                    ->label('Colaborador')
                     ->numeric()
                     ->sortable(),
 
@@ -126,6 +126,14 @@ class ConversationResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('openChat')
+                   ->label('Abrir Chat')
+                   ->icon('heroicon-o-chat-bubble-left-right')
+                   ->url(
+                       fn (Conversation $record): string => static::getUrl('chat', ['record' => $record->id])
+                   )
+                   ->slideOver(),
+
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -148,7 +156,7 @@ class ConversationResource extends Resource
             'index' => Pages\ListConversations::route('/'),
             'create' => Pages\CreateConversation::route('/create'),
             'edit' => Pages\EditConversation::route('/{record}/edit'),
-            'conversationMessages' => Pages\ConversationMessages::route('/{record}/conversation-messages'),
+            'chat' => Pages\Chat::route('/{record}/chat'),
         ];
     }
 }

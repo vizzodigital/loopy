@@ -4,92 +4,78 @@ declare(strict_types = 1);
 
 namespace App\Services\Meta;
 
+use App\Models\Integration;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
-    protected $apiUrl;
+    protected string $baseUrl = 'https://graph.facebook.com/v20.0';
 
-    protected $accessToken;
+    protected string $accessToken;
 
-    protected $phoneNumberId;
+    protected string $wabaId;
 
-    public function __construct()
-    {
-        $this->apiUrl = config('services.whatsapp.api_url');
-        $this->accessToken = config('services.whatsapp.access_token');
-        $this->phoneNumberId = config('services.whatsapp.phone_number_id');
+    protected string $phoneNumberId;
+
+    public function __construct(
+        protected Integration $integration
+    ) {
+        $this->accessToken = $integration->configs['access_token'] ?? throw new \Exception('Access token not configured.');
+        $this->wabaId = $integration->configs['waba_id'] ?? throw new \Exception('WABA ID not configured.');
+        $this->phoneNumberId = $integration->configs['phone_number_id'] ?? throw new \Exception('Phone number ID not configured.');
     }
 
-    /**
-     * Envia uma mensagem de texto simples
-     *
-     * @param string $recipientPhone Número do destinatário no formato internacional (ex.: +5511999999999)
-     * @param string $message Texto da mensagem
-     * @return array Resposta da API
-     */
-    public function sendText($recipientPhone, $message)
+    protected function getHeaders(): array
     {
-        $endpoint = "{$this->apiUrl}/{$this->phoneNumberId}/messages";
-
-        $response = Http::withHeaders([
+        return [
             'Authorization' => "Bearer {$this->accessToken}",
             'Content-Type' => 'application/json',
-        ])->post($endpoint, [
-            'messaging_product' => 'whatsapp',
-            'recipient_type' => 'individual',
-            'to' => $recipientPhone,
-            'type' => 'text',
-            'text' => [
-                'preview_url' => false,
-                'body' => $message,
-            ],
-        ]);
-
-        return $response->json();
+        ];
     }
 
-    /**
-     * Envia uma mensagem baseada em um template
-     *
-     * @param string $recipientPhone Número do destinatário
-     * @param string $templateName Nome do template aprovado
-     * @param array $parameters Parâmetros para personalizar o template
-     * @param string $language Código do idioma (ex.: pt_BR)
-     * @return array Resposta da API
-     */
-    public function sendTemplateMessage($recipientPhone, $templateName, $parameters = [], $language = 'pt_BR')
+    protected function makeRequest(string $method, string $endpoint, array $params = []): array
     {
-        $endpoint = "{$this->apiUrl}/{$this->phoneNumberId}/messages";
+        $url = "{$this->baseUrl}/{$endpoint}";
 
-        $components = [];
-
-        if (!empty($parameters)) {
-            $components = [
-                [
-                    'type' => 'body',
-                    'parameters' => array_map(function ($param) {
-                        return ['type' => 'text', 'text' => $param];
-                    }, $parameters),
-                ],
-            ];
+        if ($method === 'get' && !empty($params)) {
+            $url .= '?' . http_build_query($params);
         }
 
-        $response = Http::withHeaders([
-            'Authorization' => "Bearer {$this->accessToken}",
-            'Content-Type' => 'application/json',
-        ])->post($endpoint, [
-            'messaging_product' => 'whatsapp',
-            'recipient_type' => 'individual',
-            'to' => $recipientPhone,
-            'type' => 'template',
-            'template' => [
-                'name' => $templateName,
-                'language' => ['code' => $language],
-                'components' => $components,
-            ],
-        ]);
+        try {
+            $response = Http::withHeaders($this->getHeaders())
+                ->{$method}($url, $method === 'get' ? [] : $params)
+                ->throw()
+                ->json();
 
-        return $response->json();
+            return $response;
+        } catch (\Exception $e) {
+            Log::error("WhatsApp API request failed: {$e->getMessage()}");
+
+            throw new \Exception("Failed to communicate with WhatsApp API: {$e->getMessage()}");
+        }
+    }
+
+    public function listTemplates(?string $after = null): array
+    {
+        $endpoint = "{$this->wabaId}/message_templates";
+        $params = $after ? ['after' => $after] : [];
+
+        return $this->makeRequest('get', $endpoint, $params);
+    }
+
+    public function createTemplate(array $templateData): array
+    {
+        $endpoint = "{$this->wabaId}/message_templates";
+
+        return $this->makeRequest('post', $endpoint, $templateData);
+    }
+
+    public function deleteTemplate(string $templateName): array
+    {
+        $endpoint = "{$this->wabaId}/message_templates/{$templateName}";
+        $response = $this->makeRequest('delete', $endpoint);
+
+        return $response;
     }
 }

@@ -17,12 +17,12 @@ class Agent extends BaseModel
         'name',
         'description',
         'model', //gpt-3.5-turbo, gpt-4o
-        'temperature', // De 0.0 a 1.0 - Sendo 0.0 respostas mais objetivas e precisas. Sendo 1.0 respostas mais humanas e criativas (imprevisíveis)
-        'top_p', //Alternativa à temperatura. Mantém a “probabilidade cumulativa” (ex: 0.9 = considera as palavras mais prováveis até 90% de chance total).
-        'frequency_penalty', //Reduz repetições (ex: útil se a IA está sendo redundante).
-        'presence_penalty', //Incentiva a IA a explorar novos assuntos.
-        'max_tokens', // limite
-        'system_prompt', // Define a "personalidade" do agente
+        'temperature', // default 0.4 - Criatividade. Varia de 0 (mais preciso) a 2 (mais criativo) recomendado: 0.2 - 0.7
+        'top_p', // Alternativa à temperature. Amostra os tokens do topo de prob. Use 1.0 na maioria dos casos
+        'frequency_penalty', //default 0.3 - Penaliza repetição. 0 (padrão) até 2 - 0.2 - 0.8 se houver repetição
+        'presence_penalty', //Estimula introduzir novos tópicos. -2 a 2 - Normalmente 0.0
+        'max_tokens', //Limite de tokens na resposta - 100 - 2000 (dependendo do caso) default 1000
+        'system_prompt',
         'is_test',
         'is_default',
     ];

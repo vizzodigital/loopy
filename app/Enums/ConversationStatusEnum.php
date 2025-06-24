@@ -4,7 +4,9 @@ declare(strict_types = 1);
 
 namespace App\Enums;
 
-enum ConversationStatusEnum: string
+use Filament\Support\Contracts\HasLabel;
+
+enum ConversationStatusEnum: string implements HasLabel
 {
     case OPEN = 'open'; //Conversa ativa, não resolvida
     case CLOSED = 'closed'; //Conversa fechada, resolvida (recuperada ou não)
@@ -14,5 +16,16 @@ enum ConversationStatusEnum: string
     public static function getValues(): array
     {
         return array_column(self::cases(), 'value');
+    }
+
+    public function getLabel(): ?string
+    {
+        return match ($this) {
+            self::OPEN => 'Aberta',
+            self::CLOSED => 'Fechada',
+            self::PENDING => 'Pendente',
+            self::HUMAN => 'Assumida',
+            default => null,
+        };
     }
 }

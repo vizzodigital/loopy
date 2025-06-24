@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\IntegrationTypeEnum;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Integration extends BaseModel
 {
@@ -32,6 +33,11 @@ class Integration extends BaseModel
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function templates(): HasMany
+    {
+        return $this->hasMany(Template::class);
     }
 
     public function platform(): BelongsTo

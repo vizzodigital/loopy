@@ -13,8 +13,9 @@ class CheckExistsPhoneJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(protected Customer $customer)
-    {
+    public function __construct(
+        protected Customer $customer
+    ) {
         //
     }
 

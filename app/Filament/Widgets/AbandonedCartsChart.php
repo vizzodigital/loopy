@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace App\Providers;
+namespace App\Filament\Widgets;
 
 use App\Models\AbandonedCart;
 use Carbon\CarbonImmutable;
@@ -17,13 +17,13 @@ class AbandonedCartsChart extends ChartWidget
 
     protected static string $color = 'info';
 
+    protected static ?string $maxHeight = '300px';
+
     protected static ?int $sort = 0;
 
     protected static bool $isLazy = true;
 
     public ?string $filter = 'week';
-
-    protected static ?string $maxHeight = '300px';
 
     private array $filterConfigs = [
         'today' => [
@@ -53,11 +53,17 @@ class AbandonedCartsChart extends ChartWidget
         'year' => [
             'start_method' => 'startOfYear',
             'sql_format' => '%Y-%m',
-            'label_format' => 'M',
+            'label_format' => 'pt_br_month',
             'step_method' => 'addMonth',
             'period' => 'months',
             'end_method' => 'endOfYear',
         ],
+    ];
+
+    private array $monthsInPortuguese = [
+        1 => 'Jan', 2 => 'Fev', 3 => 'Mar', 4 => 'Abr',
+        5 => 'Mai', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+        9 => 'Set', 10 => 'Out', 11 => 'Nov', 12 => 'Dez',
     ];
 
     protected function getData(): array
@@ -89,22 +95,24 @@ class AbandonedCartsChart extends ChartWidget
 
     private function generatePeriodData(array $config): array
     {
-        $start = now()->{$config['start_method']}();
-        $end = now()->{$config['end_method']}();
+        $start = CarbonImmutable::now()->{$config['start_method']}();
+        $end = CarbonImmutable::now()->{$config['end_method']}();
 
         $period = match ($config['period']) {
-            'hours' => CarbonPeriod::hours(1)->since($start)->until($end),
-            'days' => CarbonPeriod::days(1)->since($start)->until($end),
-            'months' => CarbonPeriod::months(1)->since($start)->until($end),
-            default => CarbonPeriod::days(1)->since($start)->until($end),
+            'hours' => CarbonPeriod::create($start, '1 hour', $end),
+            'days' => CarbonPeriod::create($start, '1 day', $end),
+            'months' => CarbonPeriod::create($start, '1 month', $end),
+            default => CarbonPeriod::create($start, '1 day', $end),
         };
 
         $labels = [];
         $keys = [];
 
         foreach ($period as $date) {
-            $labels[] = $date->format($config['label_format']);
-            $keys[] = $date->format($this->getSqlFormatForKey($config['sql_format']));
+            $immutableDate = $date instanceof CarbonImmutable ? $date : CarbonImmutable::parse($date);
+
+            $labels[] = $this->formatLabel($immutableDate, $config['label_format']);
+            $keys[] = $immutableDate->format($this->getSqlFormatForKey($config['sql_format']));
         }
 
         return [
@@ -113,6 +121,18 @@ class AbandonedCartsChart extends ChartWidget
             'labels' => $labels,
             'keys' => $keys,
         ];
+    }
+
+    private function formatLabel($date, string $format): string
+    {
+        if (!$date instanceof CarbonImmutable) {
+            $date = CarbonImmutable::parse($date);
+        }
+
+        return match ($format) {
+            'pt_br_month' => $this->monthsInPortuguese[$date->month] ?? $date->format('M'),
+            default => $date->format($format),
+        };
     }
 
     private function getSqlFormatForKey(string $sqlFormat): string
@@ -176,6 +196,14 @@ class AbandonedCartsChart extends ChartWidget
     private function convertMonthToKey(string $label): string
     {
         try {
+            $monthNumber = array_search($label, $this->monthsInPortuguese);
+
+            if ($monthNumber !== false) {
+                $month = str_pad((string) $monthNumber, 2, '0', STR_PAD_LEFT);
+
+                return now()->format('Y') . "-{$month}";
+            }
+
             $month = CarbonImmutable::parse("1 {$label} " . now()->year)->format('m');
 
             return now()->format('Y') . "-{$month}";
@@ -214,7 +242,7 @@ class AbandonedCartsChart extends ChartWidget
             ],
             'plugins' => [
                 'legend' => [
-                    'display' => false,
+                    'display' => true,
                 ],
             ],
         ];

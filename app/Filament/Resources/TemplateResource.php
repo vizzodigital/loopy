@@ -139,7 +139,8 @@ class TemplateResource extends Resource
                 Tables\Columns\TextColumn::make('language')
                     ->label('Idioma'),
                 Tables\Columns\TextColumn::make('category')
-                    ->label('Categoria'),
+                    ->label('Categoria')
+                    ->badge(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status'),
                 Tables\Columns\TextColumn::make('created_at')

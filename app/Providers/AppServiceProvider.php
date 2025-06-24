@@ -4,219 +4,111 @@ declare(strict_types = 1);
 
 namespace App\Providers;
 
-use App\Models\AbandonedCart;
 use Carbon\CarbonImmutable;
-use Carbon\CarbonPeriod;
-use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
+use Opcodes\LogViewer\Facades\LogViewer;
 
-class AbandonedCartsChart extends ChartWidget
+class AppServiceProvider extends ServiceProvider
 {
-    protected static ?string $heading = 'Checkouts abandonados';
-
-    protected static string $color = 'info';
-
-    protected static ?int $sort = 0;
-
-    protected static bool $isLazy = true;
-
-    public ?string $filter = 'week';
-
-    protected static ?string $maxHeight = '300px';
-
-    private array $filterConfigs = [
-        'today' => [
-            'start_method' => 'startOfDay',
-            'sql_format' => '%H',
-            'label_format' => 'H',
-            'step_method' => 'addHour',
-            'period' => 'hours',
-            'end_method' => 'endOfDay',
-        ],
-        'week' => [
-            'start_method' => 'startOfWeek',
-            'sql_format' => '%Y-%m-%d',
-            'label_format' => 'd/m',
-            'step_method' => 'addDay',
-            'period' => 'days',
-            'end_method' => 'endOfWeek',
-        ],
-        'month' => [
-            'start_method' => 'startOfMonth',
-            'sql_format' => '%Y-%m-%d',
-            'label_format' => 'd/m',
-            'step_method' => 'addDay',
-            'period' => 'days',
-            'end_method' => 'endOfMonth',
-        ],
-        'year' => [
-            'start_method' => 'startOfYear',
-            'sql_format' => '%Y-%m',
-            'label_format' => 'M',
-            'step_method' => 'addMonth',
-            'period' => 'months',
-            'end_method' => 'endOfYear',
-        ],
-    ];
-
-    protected function getData(): array
+    /**
+     * Register any application services.
+     */
+    public function register(): void
     {
-        $storeId = Filament::getTenant()->id;
-        $config = $this->getFilterConfig();
-
-        $periodData = $this->generatePeriodData($config);
-        $results = $this->fetchChartData($storeId, $config, $periodData['start'], $periodData['end']);
-
-        return [
-            'datasets' => [
-                [
-                    'label' => 'Checkouts abandonados',
-                    'data' => $this->mapDataToLabels($results, $periodData['labels'], $config),
-                    'backgroundColor' => 'rgba(59, 130, 246, 0.5)',
-                    'borderColor' => 'rgb(59, 130, 246)',
-                    'borderWidth' => 1,
-                ],
-            ],
-            'labels' => $periodData['labels'],
-        ];
+        //
     }
 
-    private function getFilterConfig(): array
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
     {
-        return $this->filterConfigs[$this->filter] ?? $this->filterConfigs['week'];
+        $this->setupLogViewer();
+        $this->configModels();
+        $this->configCommands();
+        $this->configUrls();
+        $this->configDate();
+        $this->configGates();
+        // $this->configMonitor();
     }
 
-    private function generatePeriodData(array $config): array
+    /**
+     * Configures and registers health checks for application monitoring.
+     * This includes checks for optimized app settings, debug mode,
+     * environment configuration, database connectivity, scheduled tasks,
+     * and security advisories.
+     */
+    // private function configMonitor(): void
+    // {
+    //     Health::checks([
+    //         OptimizedAppCheck::new(),
+    //         DebugModeCheck::new(),
+    //         EnvironmentCheck::new(),
+    //         DatabaseCheck::new(),
+    //         ScheduleCheck::new(),
+    //         SecurityAdvisoriesCheck::new(),
+    //     ]);
+    // }
+
+    /**
+     * Configures the application models to operate in strict mode,
+     * which will throw exceptions on undefined attributes.
+     */
+    private function configModels(): void
     {
-        $start = now()->{$config['start_method']}();
-        $end = now()->{$config['end_method']}();
-
-        $period = match ($config['period']) {
-            'hours' => CarbonPeriod::hours(1)->since($start)->until($end),
-            'days' => CarbonPeriod::days(1)->since($start)->until($end),
-            'months' => CarbonPeriod::months(1)->since($start)->until($end),
-            default => CarbonPeriod::days(1)->since($start)->until($end),
-        };
-
-        $labels = [];
-        $keys = [];
-
-        foreach ($period as $date) {
-            $labels[] = $date->format($config['label_format']);
-            $keys[] = $date->format($this->getSqlFormatForKey($config['sql_format']));
-        }
-
-        return [
-            'start' => $start,
-            'end' => $end,
-            'labels' => $labels,
-            'keys' => $keys,
-        ];
+        Model::shouldBeStrict();
+        Model::automaticallyEagerLoadRelationships();
     }
 
-    private function getSqlFormatForKey(string $sqlFormat): string
+    /**
+     * Configures database commands to prohibit execution of destructive statements
+     * when the application is running in a production environment.
+     */
+    private function configCommands(): void
     {
-        return match ($sqlFormat) {
-            '%H' => 'H',
-            '%Y-%m-%d' => 'Y-m-d',
-            '%Y-%m' => 'Y-m',
-            default => 'Y-m-d',
-        };
+        DB::prohibitDestructiveCommands(
+            app()->isProduction()
+        );
     }
 
-    private function fetchChartData(int $storeId, array $config, CarbonImmutable $start, CarbonImmutable $end): Collection
+    /**
+     * Configures the application to always use HTTPS URLs in production environments.
+     */
+    private function configUrls(): void
     {
-        return AbandonedCart::query()
-            ->selectRaw("DATE_FORMAT(created_at, '{$config['sql_format']}') as date_key, COUNT(*) as total")
-            ->where('store_id', $storeId)
-            ->whereBetween('created_at', [$start, $end])
-            ->groupBy('date_key')
-            ->orderBy('date_key')
-            ->pluck('total', 'date_key');
+        URL::forceHttps(app()->isProduction());
     }
 
-    private function mapDataToLabels(Collection $results, array $labels, array $config): array
+    /**
+     * Configures the application to use CarbonImmutable for date and time handling.
+     */
+    private function configDate(): void
     {
-        $data = [];
-        $keyFormat = $this->getSqlFormatForKey($config['sql_format']);
-
-        foreach ($labels as $index => $label) {
-            $key = $this->getLabelKey($label, $config, $keyFormat);
-            $data[] = $results->get($key, 0);
-        }
-
-        return $data;
+        Date::use(CarbonImmutable::class);
     }
 
-    private function getLabelKey(string $label, array $config, string $keyFormat): string
+    /**
+     * Configure the authorization gates for the application, which define the abilities
+     * users can perform on resources.
+     *
+     * In this case, the user with the role of 'Super Admin' can perform any ability.
+     */
+    private function configGates(): void
     {
-        return match ($config['sql_format']) {
-            '%H' => str_pad($label, 2, '0', STR_PAD_LEFT),
-            '%Y-%m-%d' => $this->convertDayMonthToKey($label),
-            '%Y-%m' => $this->convertMonthToKey($label),
-            default => $label,
-        };
+        // Gate::before(fn ($user, $ability): ?true => $user->hasRole('Admin') ? true : null);
     }
 
-    private function convertDayMonthToKey(string $label): string
+    /**
+     * Setup the log viewer, which is accessible only to the user with email wagnerbugs@gmail.com.
+     */
+    private function setupLogViewer(): void
     {
-        $parts = explode('/', $label);
-
-        if (count($parts) !== 2) {
-            return now()->format('Y-m-d');
-        }
-
-        $day = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
-        $month = str_pad($parts[1], 2, '0', STR_PAD_LEFT);
-
-        return now()->format('Y') . "-{$month}-{$day}";
-    }
-
-    private function convertMonthToKey(string $label): string
-    {
-        try {
-            $month = CarbonImmutable::parse("1 {$label} " . now()->year)->format('m');
-
-            return now()->format('Y') . "-{$month}";
-        } catch (\Exception $e) {
-            return now()->format('Y-m');
-        }
-    }
-
-    protected function getFilters(): ?array
-    {
-        return [
-            'today' => 'Hoje',
-            'week' => 'Última semana',
-            'month' => 'Último mês',
-            'year' => 'Este ano',
-        ];
-    }
-
-    protected function getType(): string
-    {
-        return 'bar';
-    }
-
-    protected function getOptions(): array
-    {
-        return [
-            'responsive' => true,
-            'maintainAspectRatio' => true,
-            'scales' => [
-                'y' => [
-                    'beginAtZero' => true,
-                    'ticks' => [
-                        'precision' => 0,
-                    ],
-                ],
-            ],
-            'plugins' => [
-                'legend' => [
-                    'display' => false,
-                ],
-            ],
-        ];
+        // LogViewer::auth(fn ($request): bool => $request->user()?->email === 'wagnerbugs@gmail.com');
+        LogViewer::auth(fn ($request): bool => true);
     }
 }

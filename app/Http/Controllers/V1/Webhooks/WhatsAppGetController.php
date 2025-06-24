@@ -23,9 +23,9 @@ class WhatsAppGetController extends Controller
         Log::info('WhatsApp webhook recebido', $payload);
 
         if ($request->isMethod('get')) {
-            $mode = $request->get('hub.mode');
-            $token = $request->get('hub.verify_token');
-            $challenge = $request->get('hub.challenge');
+            $mode = $request->get('hub_mode');
+            $token = $request->get('hub_verify_token');
+            $challenge = $request->get('hub_challenge');
 
             if ($mode === 'subscribe' && $token === $integration->webhook) {
                 $integration->update(['is_active' => true]);

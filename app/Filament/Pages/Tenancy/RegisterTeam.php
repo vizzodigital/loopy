@@ -32,16 +32,16 @@ class RegisterTeam extends RegisterTenant
                 Select::make('ecommerce')
                     ->label('Plataforma de e-commerce')
                     ->required()
-                    ->options(Platform::where('type', IntegrationTypeEnum::ECOMMERCE)->pluck('name', 'id')),
+                    ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::ECOMMERCE)->pluck('name', 'id')),
 
                 Select::make('ai')
                     ->label('Inteligência Artificial')
                     ->required()
-                    ->options(Platform::where('type', IntegrationTypeEnum::AI)->pluck('name', 'id')),
+                    ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::AI)->pluck('name', 'id')),
 
                 Select::make('whatsapp')
                     ->label('Plataforma de comunicação')
-                    ->options(Platform::where('type', IntegrationTypeEnum::WHATSAPP)->pluck('name', 'id')),
+                    ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::WHATSAPP)->pluck('name', 'id')),
             ]);
     }
 

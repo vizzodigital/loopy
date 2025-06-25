@@ -58,7 +58,7 @@ class EditIntegration extends EditRecord
                         'scope' => 'read_orders,read_customers',
                         'redirect_uri' => route('shopify.oauth.callback'),
                         'state' => $record->webhook,
-                        'grant_options[]' => 'per-user',
+                        // 'grant_options[]' => 'per-user',
                     ]);
 
                     Log::info('[Shopify::RedirectToOAuth]', [

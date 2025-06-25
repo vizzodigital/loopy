@@ -22,7 +22,7 @@ class EditIntegration extends EditRecord
         return [
             // Actions\DeleteAction::make(),
             Action::make('authenticate')
-                ->label('Autenticar')
+                ->label('Conectar')
                 ->requiresConfirmation()
                 ->color('success')
                 ->visible(fn ($record) => $record->platform_id === 2)

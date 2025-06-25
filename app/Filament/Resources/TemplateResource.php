@@ -106,11 +106,13 @@ class TemplateResource extends Resource
                                     ->label('Variáveis')
                                     ->columns(2)
                                     ->columnSpanFull()
+                                    ->addable(false)
+                                    ->minItems(1)
                                     ->grid(3)
                                     ->schema([
                                         Forms\Components\TextInput::make('name')
                                             ->label('Nome da variável')
-                                            ->helperText('Exemplo: {{nome}}, {{numero_pedido}}, {{valor}}')
+                                            ->helperText('name')
                                             ->required()
                                             ->afterStateUpdated(function ($state, $set) {
                                                 $formatted = Str::slug($state, '_');

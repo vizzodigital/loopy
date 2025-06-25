@@ -21,7 +21,7 @@ class CreateTemplate extends CreateRecord
     {
         $body = $data['body'] ?? '';
         $examples = collect($data['examples'] ?? []);
-
+        // TODO refatorar para aceitar apenas {{ name }} . se tiver ele já manda o example => João. se não tiver tira o exaample do components.
         preg_match_all('/{{\s*(\w+)\s*}}/', $body, $matches);
         $variablesInBody = collect($matches[1])->map(fn ($v) => Str::slug($v, '_'))->unique()->values();
         $variablesInRepeater = $examples->pluck('name')->map(fn ($v) => Str::slug($v, '_'))->unique()->values();

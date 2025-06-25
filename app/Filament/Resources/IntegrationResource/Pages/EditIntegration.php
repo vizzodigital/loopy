@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class EditIntegration extends EditRecord
 {
@@ -58,6 +59,12 @@ class EditIntegration extends EditRecord
                         'redirect_uri' => route('shopify.oauth.callback'),
                         'state' => $record->webhook,
                         'grant_options[]' => 'per-user',
+                    ]);
+
+                    Log::info('[Shopify::RedirectToOAuth]', [
+                        'shop' => $shop,
+                        'state' => $record->webhook,
+                        'install_url' => $installUrl,
                     ]);
 
                     return redirect($installUrl);

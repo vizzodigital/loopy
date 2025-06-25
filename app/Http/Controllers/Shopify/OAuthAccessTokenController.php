@@ -14,6 +14,12 @@ class OAuthAccessTokenController extends Controller
 {
     public function __invoke(Request $request)
     {
+        Log::info('[Shopify::Callback GET]', [
+            'full_url' => $request->fullUrl(),
+            'query' => $request->query(),
+            'headers' => $request->headers->all(),
+        ]);
+
         $hmac = $request->query('hmac');
         $shop = $request->query('shop');
         $code = $request->query('code');
@@ -35,13 +41,17 @@ class OAuthAccessTokenController extends Controller
 
         $data = $response->json();
 
-        Log::info('Shopify installed', [
+        Log::info('[Shopify::AccessToken POST]', [
             'shop' => $shop,
-            'access_token' => $data['access_token'],
-            'scope' => $data['scope'],
+            'request_payload' => [
+                'client_id' => config('services.shopify.client_id'),
+                'code' => $code,
+            ],
+            'response' => $response->json(),
+            'headers' => $response->headers(),
         ]);
 
-        $integration = Integration::whereJsonContains('configs->shop', 'infyniashop.myshopify.com')->first();
+        $integration = Integration::whereJsonContains('configs->shop', $shop)->first();
 
         $integration->update([
             'configs' => [

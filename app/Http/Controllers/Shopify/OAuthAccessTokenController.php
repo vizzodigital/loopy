@@ -4,7 +4,6 @@ declare(strict_types = 1);
 
 namespace App\Http\Controllers\Shopify;
 
-use App\Enums\IntegrationTypeEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Integration;
 use Filament\Facades\Filament;
@@ -49,10 +48,8 @@ class OAuthAccessTokenController extends Controller
             'scope' => $data['scope'],
         ]);
 
-        $integration = Integration::where('store_id', Filament::getTenant()->id)
-            ->where('platform_id', 2)
-            ->where('type', IntegrationTypeEnum::ECOMMERCE)
-            ->first();
+        // $storeId = Filament::getTenant()->id;
+        $integration = Integration::where('webhook', $state)->first();
 
         $integration->update([
             'configs' => [

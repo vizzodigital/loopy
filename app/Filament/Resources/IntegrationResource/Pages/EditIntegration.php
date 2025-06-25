@@ -53,12 +53,14 @@ class EditIntegration extends EditRecord
                         'configs' => array_merge($record->configs ?? [], ['shop' => $shop]),
                     ]);
 
+                    cache()->put("shopify_state_{$shop}", $record->webhook, now()->addMinutes(10));
+
                     $installUrl = "https://{$shop}/admin/oauth/authorize?" . http_build_query([
                         'client_id' => config('services.shopify.client_id'),
                         'scope' => 'read_orders,read_customers',
-                        'redirect_uri' => route('shopify.oauth.callback') . '?expected_state=' . $record->webhook,
+                        'redirect_uri' => route('shopify.oauth.callback'),
                         'state' => $record->webhook,
-                        // 'grant_options[]' => 'per-user',
+                        'grant_options[]' => 'per-user',
                     ]);
 
                     Log::info('[Shopify::RedirectToOAuth]', [
@@ -67,7 +69,7 @@ class EditIntegration extends EditRecord
                         'install_url' => $installUrl,
                     ]);
 
-                    return redirect($installUrl);
+                    redirect()->away($installUrl);
                 }),
 
             $this->getSaveFormAction()

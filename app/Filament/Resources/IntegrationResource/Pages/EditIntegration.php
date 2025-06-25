@@ -56,7 +56,7 @@ class EditIntegration extends EditRecord
                     $installUrl = "https://{$shop}/admin/oauth/authorize?" . http_build_query([
                         'client_id' => config('services.shopify.client_id'),
                         'scope' => 'read_orders,read_customers',
-                        'redirect_uri' => route('shopify.oauth.callback'),
+                        'redirect_uri' => route('shopify.oauth.callback') . '?expected_state=' . $record->webhook,
                         'state' => $record->webhook,
                         // 'grant_options[]' => 'per-user',
                     ]);

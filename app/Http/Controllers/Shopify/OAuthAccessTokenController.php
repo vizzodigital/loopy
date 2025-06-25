@@ -53,6 +53,6 @@ class OAuthAccessTokenController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('filament.admin.resources.integrations.index');
+        return redirect()->route('filament.admin.resources.integrations.index', ['tenant' => $integration->store->slug]);
     }
 }

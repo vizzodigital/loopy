@@ -16,6 +16,11 @@ return [
     |
     */
 
+    'shopify' => [
+        'client_id' => env('SHOPIFY_CLIENT_ID'),
+        'client_secret' => env('SHOPIFY_CLIENT_SECRET'),
+    ],
+
     'waha' => [
         'base_url' => env('WAHA_BASE_URL'),
         'token' => env('WAHA_TOKEN'),

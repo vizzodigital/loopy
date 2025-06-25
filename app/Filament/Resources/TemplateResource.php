@@ -134,20 +134,27 @@ class TemplateResource extends Resource
         return $table
             ->poll('10s')
             ->columns([
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nome'),
+
                 Tables\Columns\TextColumn::make('language')
                     ->label('Idioma'),
+
                 Tables\Columns\TextColumn::make('category')
                     ->label('Categoria')
                     ->badge(),
+
                 Tables\Columns\TextColumn::make('status')
-                    ->label('Status'),
+                    ->label('Status')
+                    ->badge(),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Criado em')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Atualizado em')
                     ->dateTime()

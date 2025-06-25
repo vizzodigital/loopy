@@ -5,9 +5,13 @@ declare(strict_types = 1);
 namespace App\Filament\Resources\IntegrationResource\Pages;
 
 use App\Filament\Resources\IntegrationResource;
+use App\Models\Integration;
 use Filament\Actions;
 use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Http;
 
 class EditIntegration extends EditRecord
 {
@@ -17,19 +21,44 @@ class EditIntegration extends EditRecord
     {
         return [
             // Actions\DeleteAction::make(),
-            Action::make('verify')
-                ->label('Verificar')
+            Action::make('authenticate')
+                ->label('Autenticar')
                 ->requiresConfirmation()
                 ->color('success')
-                ->visible(
-                    fn ($record) => $record->platform_id === 7 &&
-                    filled($record->configs['phone_number_id'] ?? null) &&
-                    filled($record->configs['waba_id'] ?? null) &&
-                    filled($record->configs['access_token'] ?? null)
-                )
+                ->visible(fn ($record) => $record->platform_id === 2)
                 ->icon('heroicon-s-check-circle')
-                ->action(function (array $data) {
-                    // TODO chamada API
+                ->form([
+                    TextInput::make('nameStore')
+                        ->label('Loja')
+                        ->suffix('.myshopify.com'),
+                ])
+                ->action(function (array $data, Integration $record) {
+                    $storePrefix = strtolower(trim($data['nameStore']));
+                    $shop = $storePrefix . '.myshopify.com';
+
+                    $response = Http::head("https://{$shop}");
+
+                    if ($response->failed()) {
+                        Notification::make()
+                            ->title('Loja Shopify inválida')
+                            ->danger()
+                            ->body("O domínio {$shop} não pôde ser verificado.")
+                            ->send();
+
+                        return;
+                    }
+
+                    $record->update([
+                        'configs' => array_merge($record->configs ?? [], ['shop' => $shop]),
+                    ]);
+
+                    $installUrl = "https://{$shop}/admin/oauth/authorize?" . http_build_query([
+                        'client_id' => config('services.shopify.client_id'),
+                        'scope' => 'read_orders,read_customers,read_checkouts,write_webhooks',
+                        'redirect_uri' => route('shopify.oauth.callback'),
+                    ]);
+
+                    return redirect($installUrl);
                 }),
 
             $this->getSaveFormAction()

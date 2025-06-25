@@ -2,6 +2,7 @@
 
 declare(strict_types = 1);
 
+use App\Http\Controllers\Shopify\OAuthCallbackController;
 use App\Http\Controllers\V1\Webhooks\WebhookStoreController;
 use App\Http\Controllers\V1\Webhooks\WebhookWhatsAppZApiController;
 use App\Http\Controllers\V1\Webhooks\WhatsAppController;
@@ -14,6 +15,8 @@ Route::post('/webhook/whatsapp/z-api/{webhook}', WebhookWhatsAppZApiController::
 //Meta WhatsApp Business API
 Route::get('/webhook/whatsapp/official/{webhook}', WhatsAppGetController::class)->name('webhook.whatsapp.official.verify');
 Route::post('/webhook/whatsapp/official/{webhook}', WhatsAppController::class)->name('webhook.whatsapp.official.receive');
+
+Route::get('/shopify/oauth/callback', OAuthCallbackController::class)->name('shopify.oauth.callback');
 
 Route::post('/shopify/gdpr/customer-data-request', fn () => response()->json());
 Route::post('/shopify/gdpr/customer-erasure', fn () => response()->json());

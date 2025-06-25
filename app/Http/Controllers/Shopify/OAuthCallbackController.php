@@ -29,7 +29,7 @@ class OAuthCallbackController extends Controller
 
         $installUrl = "https://{$shop}/admin/oauth/authorize?" . http_build_query([
             'client_id' => config('services.shopify.client_id'),
-            'scope' => 'read_orders,read_customers',
+            'scope' => 'read_orders,read_order_edits,read_customers,read_products,read_draft_orders,read_discounts,read_delivery_customizations,read_customers,read_customer_payment_methods',
             'redirect_uri' => route('shopify.oauth.token'),
             'state' => $state,
             'grant_options[]' => 'per-user',

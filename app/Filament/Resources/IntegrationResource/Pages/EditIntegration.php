@@ -53,12 +53,10 @@ class EditIntegration extends EditRecord
                         'configs' => array_merge($record->configs ?? [], ['shop' => $shop]),
                     ]);
 
-                    cache()->put("shopify_state_{$shop}", $record->webhook, now()->addMinutes(10));
-
                     $installUrl = "https://{$shop}/admin/oauth/authorize?" . http_build_query([
                         'client_id' => config('services.shopify.client_id'),
-                        'scope' => 'read_orders,read_customers',
-                        'redirect_uri' => route('shopify.oauth.callback'),
+                        'scope' => 'read_orders,read_order_edits,read_customers,read_products,read_draft_orders,read_discounts,read_delivery_customizations,read_customers,read_customer_payment_methods',
+                        'redirect_uri' => route('shopify.oauth.token'),
                         'state' => $record->webhook,
                         'grant_options[]' => 'per-user',
                     ]);

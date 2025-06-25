@@ -42,10 +42,11 @@ class OAuthAccessTokenController extends Controller
             'access_token' => $data['access_token'],
             'scope' => $data['scope'],
             'payload' => $data,
+            'headers' => $response->headers(),
         ]);
 
         // $storeId = Filament::getTenant()->id;
-        $integration = Integration::where('configs.shop', $shop)->first();
+        $integration = Integration::whereJsonContains('configs->shop', 'infyniashop.myshopify.com')->first();
 
         $integration->update([
             'configs' => [

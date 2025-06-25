@@ -11,6 +11,7 @@ use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class OAuthCallbackController extends Controller
 {
@@ -19,7 +20,6 @@ class OAuthCallbackController extends Controller
         $code = $request->query('code');
         $hmac = $request->query('hmac');
         $shop = $request->query('shop');
-        $state = $request->query('state');
         $timestamp = $request->query('timestamp');
 
         // Validação do HMAC
@@ -34,40 +34,52 @@ class OAuthCallbackController extends Controller
         }
 
         // Troca pelo access token
-        $response = Http::post("https://{$shop}/admin/oauth/access_token", [
+        // $response = Http::post("https://{$shop}/admin/oauth/access_token", [
+        //     'client_id' => config('services.shopify.client_id'),
+        //     'client_secret' => config('services.shopify.client_secret'),
+        //     'code' => $code,
+        // ]);
+
+        $state = Str::uuid();
+
+        $installUrl = "https://{$shop}/admin/oauth/authorize?" . http_build_query([
             'client_id' => config('services.shopify.client_id'),
-            'client_secret' => config('services.shopify.client_secret'),
-            'code' => $code,
+            'scope' => 'read_orders,read_customers,read_checkouts,write_webhooks',
+            'redirect_uri' => route('filament.admin.tenant'),
+            'state' => $state,
+            'grant_options[]' => 'per-user',
         ]);
 
-        if (!$response->ok()) {
-            Log::error('Shopify token error', ['response' => $response->body()]);
+        session(['state' => $state]);
 
-            return response('Token request failed', 500);
-        }
+        return redirect()->to($installUrl);
 
-        $data = $response->json();
+        // if (!$response->ok()) {
+        //     Log::error('Shopify token error', ['response' => $response->body()]);
 
-        Log::info('Shopify installed', [
-            'shop' => $shop,
-            'access_token' => $data['access_token'],
-            'scope' => $data['scope'],
-        ]);
+        //     return response('Token request failed', 500);
+        // }
 
-        $integration = Integration::where('store_id', Filament::getTenant()->id)
-            ->where('platform_id', 2)
-            ->where('type', IntegrationTypeEnum::ECOMMERCE)
-            ->first();
+        // $data = $response->json();
 
-        $integration->update([
-            'configs' => [
-                'shop' => $data['scope'],
-                'access_token' => $data['access_token'],
-                'scope' => $data['scope'],
-            ],
-            'is_active' => true,
-        ]);
+        // Log::info('Shopify installed', [
+        //     'shop' => $shop,
+        //     'access_token' => $data['access_token'],
+        //     'scope' => $data['scope'],
+        // ]);
 
-        return redirect()->route('filament.admin.resources.integrations.index');
+        // $integration = Integration::where('store_id', Filament::getTenant()->id)
+        //     ->where('platform_id', 2)
+        //     ->where('type', IntegrationTypeEnum::ECOMMERCE)
+        //     ->first();
+
+        // $integration->update([
+        //     'configs' => [
+        //         'shop' => $data['scope'],
+        //         'access_token' => $data['access_token'],
+        //         'scope' => $data['scope'],
+        //     ],
+        //     'is_active' => true,
+        // ]);
     }
 }

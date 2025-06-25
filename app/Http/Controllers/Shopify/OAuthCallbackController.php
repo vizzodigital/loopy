@@ -16,15 +16,17 @@ class OAuthCallbackController extends Controller
 {
     public function __invoke(Request $request)
     {
-        $shop = $request->query('shop');
         $code = $request->query('code');
         $hmac = $request->query('hmac');
+        $shop = $request->query('shop');
+        $state = $request->query('state');
         $timestamp = $request->query('timestamp');
 
         // Validação do HMAC
-        $params = $request->except(['hmac', 'signature']);
+        $params = $request->except(['hmac']);
         ksort($params);
         $queryString = urldecode(http_build_query($params));
+        dd($queryString);
         $calculatedHmac = hash_hmac('sha256', $queryString, (string) config('services.shopify.client_secret'));
 
         if (!hash_equals($hmac, $calculatedHmac)) {

@@ -50,10 +50,10 @@ class OAuthAccessTokenController extends Controller
 
         $integration->update([
             'configs' => [
-                'shop' => $data['scope'],
+                'shop' => $data['shop'],
                 'access_token' => $data['access_token'],
                 'scope' => $data['scope'],
-                'user' => $data['associated_user'] ?? null,
+                'user' => $data['associated_user']['email'] ?? null,
             ],
             'is_active' => true,
         ]);

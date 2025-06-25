@@ -44,14 +44,14 @@ class OAuthAccessTokenController extends Controller
 
         Log::info('Shopify installed', [
             'shop' => $shop,
+            'state' => $state,
             'access_token' => $data['access_token'],
             'scope' => $data['scope'],
             'payload' => $data,
         ]);
 
-        dd(auth()->guard('web')->user());
         // $storeId = Filament::getTenant()->id;
-        $integration = Integration::where('configs.shop', $shop)->first();
+        $integration = Integration::where('webhook', $state)->first();
 
         $integration->update([
             'configs' => [

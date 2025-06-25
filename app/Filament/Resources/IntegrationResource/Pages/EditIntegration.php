@@ -86,7 +86,15 @@ class EditIntegration extends EditRecord
     {
         $integration = $this->record;
 
-        if ($this->record->platform_id >= 1 && $this->record->platform_id <= 4) {
+        if ($this->record->platform_id == 1) {
+            $integration->update([
+                'configs' => [
+                    'secret' => $this->record->configs['secret'] ?? null,
+                ],
+            ]);
+        }
+
+        if ($this->record->platform_id >= 3 && $this->record->platform_id <= 4) {
             $integration->update([
                 'configs' => [
                     'secret' => $this->record->configs['secret'] ?? null,

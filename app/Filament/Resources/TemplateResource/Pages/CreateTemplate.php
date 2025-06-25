@@ -20,35 +20,36 @@ class CreateTemplate extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $body = $data['body'] ?? '';
-        $examples = collect($data['examples'] ?? []);
-        // TODO refatorar para aceitar apenas {{ name }} . se tiver ele já manda o example => João. se não tiver tira o exaample do components.
-        preg_match_all('/{{\s*(\w+)\s*}}/', $body, $matches);
-        $variablesInBody = collect($matches[1])->map(fn ($v) => Str::slug($v, '_'))->unique()->values();
-        $variablesInRepeater = $examples->pluck('name')->map(fn ($v) => Str::slug($v, '_'))->unique()->values();
 
-        $diff = $variablesInBody->diff($variablesInRepeater);
+        preg_match_all('/{{\s*(\w+)\s*}}/', $body, $matches);
+        $variables = collect($matches[1])
+            ->map(fn ($v) => Str::slug($v, '_')) // slug garante uniformidade
+            ->unique()
+            ->values();
+
+        // Validação: por enquanto, apenas {{name}}
+        $allowed = collect(['name']);
+        $diff = $variables->diff($allowed);
 
         if ($diff->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'body' => 'As seguintes variáveis estão na mensagem, mas não foram definidas nos exemplos: ' . $diff->implode(', '),
+                'body' => 'Você só pode usar a variável {{name}} na mensagem.',
             ]);
-
-            Notification::make()
-                ->title('As seguintes variáveis estão na mensagem, mas não foram definidas nos exemplos: ' . $diff->implode(', '))
-                ->danger()
-                ->persistent()
-                ->send();
         }
 
         $components = [
             [
                 'type' => 'BODY',
                 'text' => $body,
-                'example' => [
-                    'body_text' => [$examples->pluck('example')->toArray()],
-                ],
             ],
         ];
+
+        // Se usar {{name}}, adiciona o example obrigatório para o WhatsApp
+        if ($variables->contains('name')) {
+            $components[0]['example'] = [
+                'body_text' => [['João']],
+            ];
+        }
 
         $templateData = [
             'name' => $data['name'],
@@ -64,13 +65,14 @@ class CreateTemplate extends CreateRecord
             $response = $whatsappService->createTemplate($templateData);
 
             $data['waba_template_id'] = $response['id'] ?? null;
-            $data['status'] = 'PENDING'; // Template enviado, aguardando aprovação
+            $data['status'] = 'PENDING';
             $data['components'] = $components;
             $data['payload'] = $response;
 
             return $data;
         } catch (\Exception $e) {
             Log::error("Failed to create WhatsApp template: {$e->getMessage()}");
+
             Notification::make()
                 ->title('Erro ao criar template')
                 ->body('Não foi possível criar o template no WhatsApp. Verifique os logs.')

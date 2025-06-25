@@ -94,41 +94,13 @@ class TemplateResource extends Resource
                                    ->options(TemplateCategoryEnum::class),
 
                                Forms\Components\Textarea::make('body')
-                                    ->label('Mensagem')
-                                    ->columnSpanFull()
-                                    ->placeholder('Ex.: Olá {{name}}. Aqui é a FULANO da LOJA. Notamos que seu pedido ainda não foi finalizado. Caso precise de ajuda para concluir a compra ou tenha alguma dúvida, estamos à disposição. Um abraço, FULANO da Equipe LOJA')
-                                    ->helperText('Use apenas a variável {{name}} para o nome do cliente.')
-                                    ->rows(5)
-                                    ->maxLength(1024)
-                                    ->required(),
-
-                               Forms\Components\Repeater::make('examples')
-                                    ->label('Variáveis')
-                                    ->columns(2)
-                                    ->columnSpanFull()
-                                    ->addable(false)
-                                    ->minItems(1)
-                                    ->grid(3)
-                                    ->schema([
-                                        Forms\Components\TextInput::make('name')
-                                            ->label('Nome da variável')
-                                            ->helperText('name')
-                                            ->required()
-                                            ->afterStateUpdated(function ($state, $set) {
-                                                $formatted = Str::slug($state, '_');
-                                                $set('name', $formatted);
-                                            })
-                                            ->default('name')
-                                            ->reactive()
-                                            ->debounce(300),
-
-                                        Forms\Components\TextInput::make('example')
-                                            ->label('Exemplos de variáveis')
-                                            ->helperText('Ex.: João')
-                                            ->default('João')
-                                            ->required(),
-                                    ])
-                                    ->helperText('Inclua amostras de todas as variáveis na sua mensagem para ajudar a Meta a analisar seu modelo. Para fins de proteção de privacidade, lembre-se de não incluir informações do cliente.'),
+                                   ->label('Mensagem')
+                                   ->columnSpanFull()
+                                   ->placeholder('Ex.: Olá {{name}}...')
+                                   ->helperText('Use apenas a variável {{name}} para o nome do cliente. Variável é opcional.')
+                                   ->rows(5)
+                                   ->maxLength(1024)
+                                   ->required(),
                            ]),
             ]);
     }

@@ -91,6 +91,7 @@ class IntegrationResource extends Resource
                                             ->addable(false)
                                             ->deletable(false)
                                             ->editableKeys(false)
+                                            ->editableValues(fn (Integration $record): bool => $record->platform_id !== 2)
                                             ->required(),
 
                                     ]),

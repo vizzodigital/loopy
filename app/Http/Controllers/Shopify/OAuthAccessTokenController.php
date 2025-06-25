@@ -33,12 +33,7 @@ class OAuthAccessTokenController extends Controller
             return response('HMAC validation failed', 400);
         }
 
-        $integration = Integration::whereJsonContains('configs->shop', $shop)->first();
-
-        $response = Http::withHeaders([
-            'Cookie' => 'state=' . $integration->webhook,
-        ])
-        ->post("https://{$shop}/admin/oauth/access_token", [
+        $response = Http::post("https://{$shop}/admin/oauth/access_token", [
             'client_id' => config('services.shopify.client_id'),
             'client_secret' => config('services.shopify.client_secret'),
             'code' => $code,

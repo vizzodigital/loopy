@@ -29,7 +29,7 @@ class ShopifyTestCommand extends Command
     public function handle()
     {
         $shop = 'infyniashop.myshopify.com';
-        $token = 'shpua_51bafa7b45644a5b6c89fd62bfc64429';
+        $token = 'shpua_1f3254364c417903fccb3afbab2b88ce';
 
         $query = <<<'GRAPHQL'
         {

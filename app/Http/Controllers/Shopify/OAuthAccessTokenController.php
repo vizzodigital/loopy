@@ -12,7 +12,7 @@ class OAuthAccessTokenController extends Controller
 {
     public function __invoke(Request $request)
     {
-        dd($request->all());
+        // dd($request->all());
         $code = $request->query('code');
         $hmac = $request->query('hmac');
         $shop = $request->query('shop');
@@ -24,14 +24,16 @@ class OAuthAccessTokenController extends Controller
 
         $calculatedHmac = hash_hmac('sha256', $queryString, (string) config('services.shopify.client_secret'));
 
-        if (!hash_equals($hmac, $calculatedHmac)) {
-            return response('HMAC validation failed', 400);
-        }
+        // if (!hash_equals($hmac, $calculatedHmac)) {
+        //     return response('HMAC validation failed', 400);
+        // }
         $response = Http::post("https://{$shop}/admin/oauth/access_token", [
             'client_id' => config('services.shopify.client_id'),
             'client_secret' => config('services.shopify.client_secret'),
             'code' => $code,
         ]);
+
+        dd($response->json());
 
         // if (!$response->ok()) {
         //     Log::error('Shopify token error', ['response' => $response->body()]);

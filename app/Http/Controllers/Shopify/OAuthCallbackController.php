@@ -35,8 +35,6 @@ class OAuthCallbackController extends Controller
             'grant_options[]' => 'per-user',
         ]);
 
-        session(['state' => $state]);
-
-        return redirect()->to($installUrl);
+        return redirect()->away($installUrl);
     }
 }

@@ -96,8 +96,8 @@ class TemplateResource extends Resource
                                Forms\Components\Textarea::make('body')
                                     ->label('Mensagem')
                                     ->columnSpanFull()
-                                    ->placeholder('Ex.: Olá {{nome}}, tudo bem? Recebemos o seu pedido de número {{numero_pedido}} no valor de {{valor}}.')
-                                    ->helperText('Use variáveis como {{nome}}, {{numero_pedido}}, {{valor}} para inserir dados dinâmicos.')
+                                    ->placeholder('Ex.: Olá {{name}}. Aqui é a FULANO da LOJA. Notamos que seu pedido ainda não foi finalizado. Caso precise de ajuda para concluir a compra ou tenha alguma dúvida, estamos à disposição. Um abraço, FULANO da Equipe LOJA')
+                                    ->helperText('Use apenas a variável {{name}} para o nome do cliente.')
                                     ->rows(5)
                                     ->maxLength(1024)
                                     ->required(),
@@ -116,12 +116,14 @@ class TemplateResource extends Resource
                                                 $formatted = Str::slug($state, '_');
                                                 $set('name', $formatted);
                                             })
+                                            ->default('name')
                                             ->reactive()
                                             ->debounce(300),
 
                                         Forms\Components\TextInput::make('example')
                                             ->label('Exemplos de variáveis')
-                                            ->helperText('Ex.: João, 12345, R$ 99,90')
+                                            ->helperText('Ex.: João')
+                                            ->default('João')
                                             ->required(),
                                     ])
                                     ->helperText('Inclua amostras de todas as variáveis na sua mensagem para ajudar a Meta a analisar seu modelo. Para fins de proteção de privacidade, lembre-se de não incluir informações do cliente.'),

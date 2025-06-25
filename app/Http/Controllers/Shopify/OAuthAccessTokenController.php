@@ -17,7 +17,6 @@ class OAuthAccessTokenController extends Controller
     {
         $hmac = $request->query('hmac');
         $shop = $request->query('shop');
-        $state = $request->query('state');
         $code = $request->query('code');
 
         $params = $request->except(['hmac']);
@@ -27,11 +26,6 @@ class OAuthAccessTokenController extends Controller
 
         if (!hash_equals($hmac, $calculatedHmac)) {
             return response('HMAC validation failed', 400);
-        }
-
-        // Validar STATE
-        if ($state !== session('shopify_oauth_state')) {
-            return response('State inválido ou sessão expirada', 400);
         }
 
         $response = Http::post("https://{$shop}/admin/oauth/access_token", [
@@ -44,14 +38,14 @@ class OAuthAccessTokenController extends Controller
 
         Log::info('Shopify installed', [
             'shop' => $shop,
-            'state' => $state,
+            'state' => $code,
             'access_token' => $data['access_token'],
             'scope' => $data['scope'],
             'payload' => $data,
         ]);
 
         // $storeId = Filament::getTenant()->id;
-        $integration = Integration::where('webhook', $state)->first();
+        $integration = Integration::where('configs.shop', $shop)->first();
 
         $integration->update([
             'configs' => [

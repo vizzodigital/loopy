@@ -46,11 +46,12 @@ class OAuthAccessTokenController extends Controller
             'shop' => $shop,
             'access_token' => $data['access_token'],
             'scope' => $data['scope'],
+            'payload' => $data,
         ]);
 
         dd(auth()->guard('web')->user());
         // $storeId = Filament::getTenant()->id;
-        $integration = Integration::where('webhook', $state)->first();
+        $integration = Integration::where('configs.shop', $shop)->first();
 
         $integration->update([
             'configs' => [

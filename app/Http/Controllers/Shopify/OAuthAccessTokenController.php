@@ -48,6 +48,7 @@ class OAuthAccessTokenController extends Controller
             'scope' => $data['scope'],
         ]);
 
+        dd(auth()->guard('web')->id());
         // $storeId = Filament::getTenant()->id;
         $integration = Integration::where('webhook', $state)->first();
 

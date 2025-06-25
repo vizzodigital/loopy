@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Shopify;
 
 use App\Http\Controllers\Controller;
 use App\Models\Integration;
-use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -38,19 +37,15 @@ class OAuthAccessTokenController extends Controller
 
         Log::info('Shopify installed', [
             'shop' => $shop,
-            'state' => $code,
             'access_token' => $data['access_token'],
             'scope' => $data['scope'],
-            'payload' => $data,
-            'headers' => $response->headers(),
         ]);
 
-        // $storeId = Filament::getTenant()->id;
         $integration = Integration::whereJsonContains('configs->shop', 'infyniashop.myshopify.com')->first();
 
         $integration->update([
             'configs' => [
-                'shop' => $data['shop'],
+                'shop' => $shop,
                 'access_token' => $data['access_token'],
                 'scope' => $data['scope'],
                 'user' => $data['associated_user']['email'] ?? null,

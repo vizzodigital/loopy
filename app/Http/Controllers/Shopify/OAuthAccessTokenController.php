@@ -58,6 +58,6 @@ class OAuthAccessTokenController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('filament.admin.resources.customers.edit', ['record' => $integration->id]);
+        return redirect()->route('filament.admin.resources.integrations.index');
     }
 }

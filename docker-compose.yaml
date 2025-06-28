@@ -15,7 +15,7 @@ services:
     container_name: infynia_app
     build: .
     restart: always
-    command: sh -c "php artisan key:generate && php artisan migrate && php artisan db:seed"
+    command: sh -c "php artisan key:generate && php artisan migrate && php artisan db:seed && frankenphp"
     ports:
       - "80:80"
       - "443:443"

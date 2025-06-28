@@ -11,10 +11,17 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 # Install MySQL PDO extension
 RUN docker-php-ext-install pdo pdo_mysql
 
+# Add Node.js + npm (for Vite)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs
+
 # Optional: install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Copy the PHP files of your project in the public directory
-#COPY . /app/public
-# If you use Symfony or Laravel, you need to copy the whole project instead:
 COPY . /app
+
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["entrypoint.sh"]

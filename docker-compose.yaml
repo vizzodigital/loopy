@@ -1,5 +1,17 @@
 services:
-  php:
+  db:
+    image: mysql:8
+    container_name: infynia_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - db_data:/var/lib/mysql
+
+  app:
     container_name: infynia_app
     build: .
     restart: always
@@ -13,29 +25,17 @@ services:
     depends_on:
       - db
 
-  # queue:
-  #   build: .
-  #   restart: always
-  #   command: php artisan queue:work --sleep=3 --tries=3
-  #   volumes:
-  #     - .:/app
-  #   depends_on:
-  #     - db
-
-  db:
-    image: mysql:8
-    container_name: infynia_db
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: laravel
-      MYSQL_USER: laravel
-      MYSQL_PASSWORD: secret
-      MYSQL_ROOT_PASSWORD: rootpass
+  queue:
+    build: .
+    restart: always
+    command: php artisan queue:work --sleep=3 --tries=3
     volumes:
-      - db_data:/var/lib/mysql
+      - .:/app
+    depends_on:
+      - db
 
 # Volumes needed for Caddy certificates and configuration
 volumes:
+  db_data:
   caddy_data:
   caddy_config:
-  db_data:

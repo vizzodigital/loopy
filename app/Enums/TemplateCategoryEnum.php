@@ -9,9 +9,9 @@ use Filament\Support\Contracts\HasLabel;
 
 enum TemplateCategoryEnum: string implements HasLabel, HasColor
 {
-    case MARKETING = 'marketing'; //Promoções, ofertas, lembretes de carrinho, anúncios, etc.
-    case UTILITY = 'utility'; //Mensagens transacionais, confirmações, atualizações de pedidos.
-    case AUTHENTICATION = 'authentication'; //Códigos de verificação, autenticação de dois fatores (2FA).
+    case MARKETING = 'MARKETING'; //Promoções, ofertas, lembretes de carrinho, anúncios, etc.
+    case UTILITY = 'UTILITY'; //Mensagens transacionais, confirmações, atualizações de pedidos.
+    case AUTHENTICATION = 'AUTHENTICATION'; //Códigos de verificação, autenticação de dois fatores (2FA).
 
     public static function getValues(): array
     {

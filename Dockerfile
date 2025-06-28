@@ -8,8 +8,13 @@ ENV SERVER_NAME=infynia.vizzo.digital
 # Enable PHP production settings
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
+RUN install-php-extensions \
+    pcntl
+
 # Install MySQL PDO extension
-RUN docker-php-ext-install pdo pdo_mysql
+RUN docker-php-ext-install \
+    pdo \
+    pdo_mysql
 
 # Add Node.js + npm (for Vite)
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
@@ -20,3 +25,5 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Copy the PHP files of your project in the public directory
 COPY . /app
+
+ENTRYPOINT ["php", "artisan", "octane:frankenphp"]

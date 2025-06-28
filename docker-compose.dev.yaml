@@ -1,0 +1,37 @@
+services:
+  db:
+    image: mysql:8
+    container_name: infynia_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - db_data:/var/lib/mysql
+
+  app:
+    container_name: infynia_app
+    image: dunglas/frankenphp
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+
+  # queue:
+  #   container_name: infynia_queue
+  #   build: .
+  #   restart: always
+  #   command: php artisan queue:work --sleep=3 --tries=3
+  #   volumes:
+  #     - .:/app
+  #   depends_on:
+  #     - db
+
+volumes:
+  db_data:

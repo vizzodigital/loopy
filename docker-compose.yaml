@@ -1,0 +1,41 @@
+services:
+  php:
+    container_name: infynia_app
+    build: .
+    restart: always
+    ports:
+      - "80:80" # HTTP
+      - "443:443" # HTTPS
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - db
+
+  # queue:
+  #   build: .
+  #   restart: always
+  #   command: php artisan queue:work --sleep=3 --tries=3
+  #   volumes:
+  #     - .:/app
+  #   depends_on:
+  #     - db
+
+  db:
+    image: mysql:8
+    container_name: infynia_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - db_data:/var/lib/mysql
+
+# Volumes needed for Caddy certificates and configuration
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:

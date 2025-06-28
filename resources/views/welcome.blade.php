@@ -1396,7 +1396,7 @@
             class="flex w-full max-w-[335px] justify-center lg:max-w-4xl lg:flex-row"
         >
             <a
-                href="https://infynia.app/admin"
+                href="/admin"
                 class="rounded-lg bg-white p-6 pb-12 text-lg leading-[20px] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-lg lg:p-20 dark:bg-[#161615] dark:text-[#EDEDEC] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]"
             >
                 Infynia

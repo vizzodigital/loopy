@@ -15,10 +15,11 @@ services:
     container_name: infynia_app
     build: .
     restart: always
+    command: sh -c "php artisan key:generate && php artisan migrate && php artisan db:seed"
     ports:
-      - "80:80" # HTTP
-      - "443:443" # HTTPS
-      - "443:443/udp" # HTTP/3
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -35,7 +36,6 @@ services:
     depends_on:
       - db
 
-# Volumes needed for Caddy certificates and configuration
 volumes:
   db_data:
   caddy_data:

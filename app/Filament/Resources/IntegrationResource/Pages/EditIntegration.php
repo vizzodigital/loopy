@@ -103,7 +103,9 @@ class EditIntegration extends EditRecord
         }
 
         if ($this->record->platform_id >= 5 && $this->record->platform_id <= 6) {
+            $active = filled($this->record->configs['api_key']);
             $integration->update([
+                'is_active' => $active,
                 'configs' => [
                     'api_key' => $this->record->configs['api_key'] ?? null,
                 ],

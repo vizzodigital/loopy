@@ -22,7 +22,7 @@ class Plan extends BaseModel
     protected function casts(): array
     {
         return [
-            'price' => 'decimal:10,2',
+            'price' => 'decimal:2',
             'features' => 'array',
             'is_active' => 'boolean',
         ];

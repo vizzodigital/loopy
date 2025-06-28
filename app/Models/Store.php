@@ -15,6 +15,7 @@ class Store extends BaseModel
     protected $fillable = [
         'name',
         'slug',
+        'description',
         'is_active',
         'plan_id',
     ];

@@ -78,4 +78,24 @@ class WhatsAppService
 
         return $response;
     }
+
+    public function sendTemplate(string $to, string $templateName, string $language = 'pt_BR', array $components = []): array
+    {
+        $endpoint = "{$this->phoneNumberId}/messages";
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'to' => $to,
+            'type' => 'template',
+            'template' => [
+                'name' => $templateName,
+                'language' => [
+                    'code' => $language,
+                ],
+                'components' => $components,
+            ],
+        ];
+
+        return $this->makeRequest('post', $endpoint, $payload);
+    }
 }

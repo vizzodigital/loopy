@@ -52,13 +52,16 @@ class IntegrationResource extends Resource
                                             ->label('Loja')
                                             ->content(fn (Integration $record): string => $record->store->name),
 
-                                        Forms\Components\Select::make('platform_id')
-                                            ->required()
-                                            ->label('Plataforma')
-                                            ->options(function (Integration $record) {
-                                                return Platform::where('type', $record->type->value)->pluck('name', 'id');
-                                            })
-                                            ->live(onBlur: true),
+                                        // Forms\Components\Select::make('platform_id')
+                                        //     ->required()
+                                        // ->disabled()
+                                        // ->label('Plataforma')
+                                        // ->options(function (Integration $record) {
+                                        //     return Platform::where('type', $record->type->value)->where('is_active', true)->pluck('name', 'id');
+                                        // })
+                                        // ->options(Platform::where('is_active', true)->pluck('name', 'id'))
+                                        // ->default($record->platform_id ?? null)
+                                        // ->live(onBlur: true),
 
                                         Forms\Components\Placeholder::make('webhookURL')
                                             ->label('Webhook')

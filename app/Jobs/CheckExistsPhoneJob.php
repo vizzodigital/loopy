@@ -25,6 +25,10 @@ class CheckExistsPhoneJob implements ShouldQueue
 
         $response = $wahaService->checkExists($this->customer->phone);
 
+        if ($response['exists'] === false) {
+            return;
+        }
+
         $this->customer->update([
             'whatsapp' => preg_replace('/[^0-9]/', '', $response['chatId']),
         ]);

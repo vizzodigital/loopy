@@ -24,6 +24,7 @@ class Template extends Model
         'status',
         'rejection_reason',
         'waba_template_id',
+        'is_active',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class Template extends Model
             'examples' => 'array',
             'components' => 'array',
             'payload' => 'array',
+            'is_active' => 'boolean',
         ];
     }
 

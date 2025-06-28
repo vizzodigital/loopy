@@ -6,6 +6,7 @@ namespace App\Filament\Pages\Tenancy;
 
 use App\Models\Store;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Pages\Tenancy\EditTenantProfile;
@@ -29,6 +30,11 @@ class EditTeamProfile extends EditTenantProfile
                         ->label('Loja')
                         ->required()
                         ->maxLength(50),
+
+                        Textarea::make('description')
+                        ->label('Descrição')
+                        ->rows(5)
+                        ->columnSpanFull(),
                     ]),
             ]);
     }

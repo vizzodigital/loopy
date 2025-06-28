@@ -23,12 +23,31 @@ class WahaService
 
     public function checkExists(string $phone): array
     {
-        $url = $this->baseUrl . '/check-exists' . '?phone=' . $phone . '&session=' . $this->session;
+        $url = $this->baseUrl . '/api/contacts/check-exists' . '?phone=' . $phone . '&session=' . $this->session;
 
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
             'X-Api-Key' => $this->token,
         ])->get($url);
+
+        return $response->json();
+    }
+
+    public function sendText(string $phone, string $message): array
+    {
+        $url = $this->baseUrl . '/api/sendText';
+
+        $payload = [
+            'chatId' => $phone . '@c.us',
+            'text' => $message,
+            'session' => $this->session,
+        ];
+
+        $response = Http::withHeaders([
+            'accept' => 'application/json',
+            'X-Api-Key' => $this->token,
+            'Content-Type' => 'application/json',
+        ])->post($url, $payload);
 
         return $response->json();
     }

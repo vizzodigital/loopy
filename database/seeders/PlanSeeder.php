@@ -14,7 +14,9 @@ class PlanSeeder extends Seeder
      */
     public function run(): void
     {
-        Plan::create([
+        Plan::updateOrCreate(
+            ['slug' => 'basic'],
+            [
             'name' => 'Basic',
             'slug' => 'basic',
             'price' => 299.00,

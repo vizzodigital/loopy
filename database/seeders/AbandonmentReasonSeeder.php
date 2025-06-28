@@ -55,7 +55,10 @@ class AbandonmentReasonSeeder extends Seeder
         ];
 
         foreach ($reasons as $reason) {
-            AbandonmentReason::firstOrCreate($reason);
+            AbandonmentReason::firstOrCreate(
+                ['name' => $reason['name']],
+                $reason
+            );
         }
     }
 }

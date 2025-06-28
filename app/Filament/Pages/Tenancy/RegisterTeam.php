@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace App\Filament\Pages\Tenancy;
 
 use App\Enums\IntegrationTypeEnum;
+use App\Enums\PlatformsEnum;
 use App\Models\Platform;
 use App\Models\Store;
 use Filament\Forms\Components\Select;
@@ -26,22 +27,23 @@ class RegisterTeam extends RegisterTenant
             ->schema([
                 TextInput::make('name')
                     ->label('Loja')
+                    ->suffix('.myshopify.com')
                     ->required()
                     ->maxLength(50),
 
-                Select::make('ecommerce')
-                    ->label('Plataforma de e-commerce')
-                    ->required()
-                    ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::ECOMMERCE)->pluck('name', 'id')),
+                // Select::make('ecommerce')
+                //     ->label('Plataforma de e-commerce')
+                //     ->required()
+                //     ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::ECOMMERCE)->pluck('name', 'id')),
 
-                Select::make('ai')
-                    ->label('Inteligência Artificial')
-                    ->required()
-                    ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::AI)->pluck('name', 'id')),
+                // Select::make('ai')
+                //     ->label('Inteligência Artificial')
+                //     ->required()
+                //     ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::AI)->pluck('name', 'id')),
 
-                Select::make('whatsapp')
-                    ->label('Plataforma de comunicação')
-                    ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::WHATSAPP)->pluck('name', 'id')),
+                // Select::make('whatsapp')
+                //     ->label('Plataforma de comunicação')
+                //     ->options(Platform::where('is_active', true)->where('type', IntegrationTypeEnum::WHATSAPP)->pluck('name', 'id')),
             ]);
     }
 
@@ -50,20 +52,21 @@ class RegisterTeam extends RegisterTenant
         $store = Store::create([
             'name' => $data['name'],
             'slug' => (string) Str::uuid(),
+            'description' => '',
             'is_active' => true,
             'plan_id' => 1,
         ]);
 
         $store->integrations()->create([
-            'platform_id' => $data['ecommerce'],
+            'platform_id' => PlatformsEnum::SHOPIFY->value,
             'webhook' => Str::uuid()->toString(),
             'type' => IntegrationTypeEnum::ECOMMERCE,
-            'configs' => ['secret' => null],
+            'configs' => ['shop' => $data['name'] . '.myshopify.com'],
             'is_active' => false,
         ]);
 
         $store->integrations()->create([
-            'platform_id' => $data['ai'],
+            'platform_id' => PlatformsEnum::OPENAI->value,
             'webhook' => Str::uuid()->toString(),
             'type' => IntegrationTypeEnum::AI,
             'configs' => ['api_key' => null],
@@ -76,10 +79,10 @@ class RegisterTeam extends RegisterTenant
             9 => ['session' => null, 'api_key' => null],
         ];
 
-        $configs = $configPresets[$data['whatsapp']] ?? [];
+        $configs = $configPresets[PlatformsEnum::WHATSAPP->value] ?? [];
 
         $store->integrations()->create([
-            'platform_id' => $data['whatsapp'],
+            'platform_id' => PlatformsEnum::WHATSAPP->value,
             'webhook' => Str::uuid()->toString(),
             'type' => IntegrationTypeEnum::WHATSAPP,
             'configs' => $configs,

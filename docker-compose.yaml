@@ -15,7 +15,7 @@ services:
     container_name: infynia_app
     build: .
     restart: always
-    command: /app/docker/entrypoint.sh
+    # command: /app/docker/entrypoint.sh
     ports:
       - "80:80"
       - "443:443"

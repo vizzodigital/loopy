@@ -1,16 +1,21 @@
 #!/bin/bash
 
+# Exit on any error
 set -e
 
-# echo "📦 Installing Composer dependencies..."
-# composer install --no-dev --optimize-autoloader
+echo "Starting Laravel application with queue worker and scheduler..."
 
-echo "⚙️ Building assets with Vite..."
-npm install --legacy-peer-deps
-npm run build
+# Run migrations (optional, you can remove this if not needed)
+# php artisan migrate --force
 
-echo "🔐 Generating app key..."
-php artisan key:generate || true
+# Start the queue worker in the background
+echo "Starting queue worker..."
+php artisan queue:work --sleep=3 --tries=3 --max-time=3600 &
 
-echo "🧬 Running migrations..."
-php artisan migrate || true
+# Start the scheduler in the background
+echo "Starting scheduler..."
+php artisan schedule:work &
+
+# Start the main web server in the foreground
+echo "Starting web server..."
+exec frankenphp

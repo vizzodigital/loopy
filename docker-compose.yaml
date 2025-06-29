@@ -15,7 +15,7 @@ services:
     container_name: infynia_app
     build: .
     restart: always
-    # command: sh -c "php artisan key:generate && php artisan migrate && php artisan db:seed && frankenphp"
+    command: /app/docker/entrypoint.sh
     ports:
       - "80:80"
       - "443:443"
@@ -23,18 +23,9 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - ./storage/logs:/app/storage/logs # Mount logs for easier debugging
     depends_on:
       - db
-
-  # queue:
-  #   container_name: infynia_queue
-  #   build: .
-  #   restart: always
-  #   command: php artisan queue:work --sleep=3 --tries=3
-  #   volumes:
-  #     - .:/app
-  #   depends_on:
-  #     - db
 
 volumes:
   db_data:
